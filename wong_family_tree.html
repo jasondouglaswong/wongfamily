@@ -284,7 +284,6 @@
   #editor .footer button.delete{color:var(--uncertain);border-color:var(--border);}
   #editor .footer button.delete:hover{background:var(--uncertain-soft);border-color:var(--uncertain);}
   #hint{font-size:11px;color:var(--sub2);margin-top:4px;line-height:1.4;}
-  #fileimport{display:none;}
 
   #spouseList{display:flex;flex-direction:column;gap:10px;}
   .spouseRow{border:1px solid var(--border);border-radius:10px;padding:10px 10px 11px;background:var(--bg);}
@@ -352,10 +351,7 @@
   <div class="spacer"></div>
   <button id="btnTheme" class="icon-btn" title="Toggle light/dark">🌙</button>
   <div class="divider"></div>
-  <button id="btnExportJSON" title="Download the raw data as JSON">{ }<span class="lbl"> Data (.json)</span></button>
-  <button id="btnImportJSON" title="Load a previously exported JSON file">⇧<span class="lbl"> Import</span></button>
   <button id="btnExportHTML" class="primary" title="Download this whole page with your edits baked in">⇩<span class="lbl"> Updated page (.html)</span></button>
-  <input type="file" id="fileimport" accept=".json">
 </div>
 
 <div id="breadcrumb"></div>
@@ -3577,39 +3573,7 @@
 
   document.getElementById("btnAdd").onclick = () => openEditor(null);
 
-  // ---------- import / export ----------
-  document.getElementById("btnExportJSON").onclick = () => {
-    const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "wong-family-tree-data.json";
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  document.getElementById("btnImportJSON").onclick = () => document.getElementById("fileimport").click();
-  document.getElementById("fileimport").addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const imported = JSON.parse(reader.result);
-        if (!Array.isArray(imported)) throw new Error("not an array");
-        DATA = migrateSpouses(imported);
-        persist();
-        // no id passed -> render() lands on the root, since the old focus
-        // person may not even exist in the freshly imported data
-        render();
-        alert("Imported " + DATA.length + " people.");
-      } catch(err) {
-        alert("Could not read that file as family tree JSON: " + err.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  });
-
+  // ---------- export ----------
   document.getElementById("btnExportHTML").onclick = () => {
     persist(); // make sure the embedded script tag matches live DATA
     const clone = document.documentElement.cloneNode(true);
