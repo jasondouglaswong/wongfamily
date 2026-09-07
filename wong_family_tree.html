@@ -222,11 +222,11 @@
   /* Activity log -- a permanent strip below the chart (not another layer on
      top of it), so it never competes with the tree itself for space. */
   #activityBar{
-    flex:none;height:130px;background:var(--panel);
+    flex:none;height:150px;background:var(--panel);
     border-top:1px solid var(--border);display:flex;flex-direction:column;z-index:40;
   }
   #activityBar h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:0;padding:8px 16px 4px;flex:none;}
-  #activityBar .body{overflow-y:auto;flex:1;padding:0 16px 6px;}
+  #activityBar .body{overflow-y:auto;flex:1;padding:0 16px 26px;}
   #activityBar .empty{color:var(--sub2);font-size:12.5px;padding:6px 0;}
   .log-entry{padding:5px 0;font-size:12.5px;display:flex;gap:8px;align-items:baseline;border-bottom:1px dashed var(--border);}
   .log-entry:last-child{border-bottom:none;}
@@ -236,9 +236,9 @@
   .log-entry .when{color:var(--sub2);font-size:11px;white-space:nowrap;}
 
   @media (max-width: 720px){
-    #activityBar{height:128px;}
+    #activityBar{height:148px;}
     #activityBar h2{padding:7px 12px 4px;}
-    #activityBar .body{padding:0 12px 4px;}
+    #activityBar .body{padding:0 12px 24px;}
   }
 
   /* photo avatars — colored initials by default (exactly one gold, one red — the
@@ -328,14 +328,20 @@
   .spouseRow .spouseRowTop{display:flex;gap:8px;align-items:center;}
   .spouseRow .spouseRowTop input{flex:1;}
   .spouseRow textarea{min-height:52px;margin-top:8px;}
-  .spAvatarWrap{flex:none;position:relative;width:30px;height:34px;}
+  /* A visibly separate, labeled "photo" strip at the top of each spouse
+     row -- not just a tiny icon buried next to their name -- so it's
+     unmistakable there's a dedicated place to add their photo. */
+  .spPhotoRow{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+  .spAvatarWrap{flex:none;position:relative;width:38px;height:38px;}
   .spAvatarWrap .avatar{cursor:default;}
-  .spPhotoBtns{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);display:flex;gap:3px;}
-  .sp_photo_upload, .sp_photo_remove{flex:none;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid var(--border);
-    background:var(--panel);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;
-    font-size:9px;line-height:1;box-shadow:var(--shadow);transition:color .15s,border-color .15s;}
-  .sp_photo_upload:hover{color:var(--accent);border-color:var(--accent);}
-  .sp_photo_remove:hover{color:var(--uncertain);border-color:var(--uncertain);}
+  .spPhotoActions{display:flex;gap:7px;flex-wrap:wrap;}
+  .spPhotoHint{font-size:11.5px;color:var(--sub2);font-style:italic;}
+  .sp_photo_upload, .sp_photo_remove{font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel);color:var(--sub);cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+    transition:color .15s,border-color .15s,background .15s;}
+  .sp_photo_upload:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+  .sp_photo_remove{color:var(--uncertain);}
+  .sp_photo_remove:hover{background:var(--uncertain-soft);border-color:var(--uncertain);}
   .sp_remove{flex:none;width:30px;height:30px;padding:0;border-radius:8px;border:1px solid var(--border);
     background:var(--panel);color:var(--sub);cursor:pointer;font-size:14px;line-height:1;transition:background .15s,border-color .15s,color .15s;}
   .sp_remove:hover{background:var(--uncertain-soft);border-color:var(--uncertain);color:var(--uncertain);}
@@ -3520,27 +3526,34 @@
   // A spouse can only get a photo-upload slot once they have a stable id --
   // i.e. once they've been saved at least once, same "save first" rule the
   // main person's own photo already follows (see #photoSectionNew above).
-  function spouseAvatarBlockHtml(s){
+  // Rendered as its own labeled strip (avatar + "Add photo"/"Change photo"/
+  // "Remove photo" buttons), not a tiny icon easy to miss next to their name.
+  function spousePhotoRowHtml(s){
     s = s || {};
-    const av = avatarHtml({name:s.name || "", photoUrl:s.photoUrl}, "avatar-sm");
+    const av = avatarHtml({name:s.name || "", photoUrl:s.photoUrl}, "avatar-md");
     if (!s.id){
-      return `<div class="spAvatarWrap" title="Save this spouse first, then come back to add a photo">${av}</div>`;
+      return `<div class="spPhotoRow">
+        <div class="spAvatarWrap">${av}</div>
+        <div class="spPhotoHint">Save this spouse first, then come back to add a photo</div>
+      </div>`;
     }
-    return `<div class="spAvatarWrap">
-      ${av}
-      <div class="spPhotoBtns">
-        <button type="button" class="sp_photo_upload" title="${s.photoUrl ? "Change photo" : "Add photo"}">${ICON.camera}</button>
-        ${s.photoUrl ? `<button type="button" class="sp_photo_remove" title="Remove photo">✕</button>` : ""}
+    return `<div class="spPhotoRow">
+      <div class="spAvatarWrap">
+        ${av}
+        <input type="file" class="sp_photo_input" accept="image/*" style="display:none;">
       </div>
-      <input type="file" class="sp_photo_input" accept="image/*" style="display:none;">
+      <div class="spPhotoActions">
+        <button type="button" class="sp_photo_upload">${ICON.camera} ${s.photoUrl ? "Change photo" : "Add photo"}</button>
+        ${s.photoUrl ? `<button type="button" class="sp_photo_remove">Remove photo</button>` : ""}
+      </div>
     </div>`;
   }
 
   function spouseRowHtml(s){
     s = s || {};
     return `<div class="spouseRow" data-id="${s.id || ""}">
+      ${spousePhotoRowHtml(s)}
       <div class="spouseRowTop">
-        ${spouseAvatarBlockHtml(s)}
         <input type="text" class="sp_name" placeholder="Spouse name" value="${escapeHtml(s.name || "")}">
         <button type="button" class="sp_remove" title="Remove this spouse">✕</button>
       </div>
@@ -3570,8 +3583,8 @@
     const fileInput = row.querySelector(".sp_photo_input");
     const removeBtn = row.querySelector(".sp_photo_remove");
     const refreshRowAvatar = (spouse) => {
-      const slot = row.querySelector(".spAvatarWrap");
-      if (slot) slot.outerHTML = spouseAvatarBlockHtml(spouse);
+      const slot = row.querySelector(".spPhotoRow");
+      if (slot) slot.outerHTML = spousePhotoRowHtml(spouse);
       wireSpousePhotoControls(row);
     };
     if (uploadBtn && fileInput){
