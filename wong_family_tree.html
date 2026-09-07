@@ -4,37 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Wong Family</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-  
-    --bg:#f4f6fb; --canvas-dot:#e3e8f3; --panel:#ffffff; --ink:#0f172a; --sub:#64748b; --sub2:#94a3b8;
-    --line-clear:#94a3b8; --line-pos:#d97706; --accent:#4f46e5; --accent-ink:#ffffff; --accent-soft:#eef0ff;
-    --accent2:#0d9488; --border:#e2e8f0; --uncertain:#e11d48; --uncertain-soft:#fff1f2;
-    --shadow:0 1px 2px rgba(15,23,42,.06), 0 1px 1px rgba(15,23,42,.04);
-    --shadow-lg:0 12px 32px rgba(15,23,42,.16), 0 2px 8px rgba(15,23,42,.08);
+    --bg:oklch(98.2% 0.004 85); --panel:oklch(100% 0 0); --ink:oklch(17% 0.012 40);
+    --sub:oklch(43% 0.012 55); --sub2:oklch(58% 0.009 60); --border:oklch(89% 0.007 85); --border-soft:oklch(93.5% 0.005 85);
+    --accent:oklch(55% 0.115 75); --accent-ink:oklch(99% 0.006 85); --accent-soft:oklch(94.3% 0.035 78);
+    --accent2:oklch(55% 0.115 75);
+    --uncertain:oklch(50% 0.2 26); --uncertain-soft:oklch(92% 0.055 25);
+    --shadow:0 1px 2px oklch(20% 0 0 / .05);
+    --shadow-lg:0 14px 34px oklch(20% 0 0 / .12), 0 2px 8px oklch(20% 0 0 / .06);
     --radius:12px;
     color-scheme:light;
   }
   [data-theme="dark"]{
-    --bg:#0b1220; --canvas-dot:#182338; --panel:#131b2e; --ink:#e7ebf3; --sub:#9aa6bb; --sub2:#6f7c94;
-    --line-clear:#5b677e; --line-pos:#e0a64b; --accent:#818cf8; --accent-ink:#0b1024; --accent-soft:#1c2140;
-    --accent2:#2dd4bf; --border:#232e47; --uncertain:#fb7185; --uncertain-soft:#2a1620;
-    --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 40px rgba(0,0,0,.55);
+    --bg:oklch(15.5% 0.009 50); --panel:oklch(20.5% 0.009 50); --ink:oklch(94.5% 0.006 85);
+    --sub:oklch(71% 0.009 70); --sub2:oklch(55% 0.009 65); --border:oklch(30% 0.009 55); --border-soft:oklch(26% 0.008 55);
+    --accent:oklch(74% 0.115 78); --accent-ink:oklch(16% 0.01 50); --accent-soft:oklch(30% 0.045 78);
+    --accent2:oklch(74% 0.115 78);
+    --uncertain:oklch(64% 0.21 26); --uncertain-soft:oklch(35% 0.15 25);
+    --shadow:0 1px 2px oklch(0% 0 0 / .35); --shadow-lg:0 18px 40px oklch(0% 0 0 / .45);
     color-scheme:dark;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:#0b1220; --canvas-dot:#182338; --panel:#131b2e; --ink:#e7ebf3; --sub:#9aa6bb; --sub2:#6f7c94;
-      --line-clear:#5b677e; --line-pos:#e0a64b; --accent:#818cf8; --accent-ink:#0b1024; --accent-soft:#1c2140;
-      --accent2:#2dd4bf; --border:#232e47; --uncertain:#fb7185; --uncertain-soft:#2a1620;
-      --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 40px rgba(0,0,0,.55);
+      --bg:oklch(15.5% 0.009 50); --panel:oklch(20.5% 0.009 50); --ink:oklch(94.5% 0.006 85);
+      --sub:oklch(71% 0.009 70); --sub2:oklch(55% 0.009 65); --border:oklch(30% 0.009 55); --border-soft:oklch(26% 0.008 55);
+      --accent:oklch(74% 0.115 78); --accent-ink:oklch(16% 0.01 50); --accent-soft:oklch(30% 0.045 78);
+      --accent2:oklch(74% 0.115 78);
+      --uncertain:oklch(64% 0.21 26); --uncertain-soft:oklch(35% 0.15 25);
+      --shadow:0 1px 2px oklch(0% 0 0 / .35); --shadow-lg:0 18px 40px oklch(0% 0 0 / .45);
       color-scheme:dark;
     }
   }
   *{box-sizing:border-box;}
   html{margin:0;padding:0;}
   body{margin:0;padding:0;color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;}
 
   /* Everything the tree needs lives inside this one box, positioned in the
@@ -47,18 +55,29 @@
     height:min(85vh, 900px); min-height:520px;
     overflow:hidden; background:var(--bg);
     border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow-lg);
+    display:flex; flex-direction:column;
   }
   #app:fullscreen{ height:100vh; border-radius:0; }
 
+  /* toolbar/breadcrumb/stage/activityBar stack as normal flex children (not
+     absolutely-positioned regions with hand-guessed pixel offsets) so a
+     toolbar that wraps to 2 rows on a narrow phone simply pushes everything
+     below it down, instead of overlapping it. */
   #toolbar{
-    position:absolute;top:0;left:0;right:0;height:60px;background:color-mix(in srgb, var(--panel) 88%, transparent);
+    flex:none;background:color-mix(in srgb, var(--panel) 88%, transparent);
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     border-bottom:1px solid var(--border);border-radius:16px 16px 0 0;
     display:flex;align-items:center;gap:10px;padding:0 16px;z-index:50;flex-wrap:wrap;
   }
-  #toolbar h1{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0 6px 0 0;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px;}
-  #toolbar h1 .logo-dot{width:22px;height:22px;display:inline-flex;color:var(--accent);flex:none;}
-  #toolbar h1 .logo-dot svg{width:100%;height:100%;}
+  .miniSeal{display:inline-flex;flex:none;align-items:center;justify-content:center;width:14px;height:14px;
+    border:1px solid var(--uncertain);border-radius:3px;color:var(--uncertain);font-size:9px;line-height:1;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC","Songti SC",serif;}
+  #seal{flex:none;width:32px;height:32px;border:1.4px solid var(--uncertain);border-radius:7px;
+    display:flex;align-items:center;justify-content:center;color:var(--uncertain);margin-right:2px;}
+  #seal span{font-size:18px;line-height:1;font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC","Songti SC",serif;}
+  #wordmark{font-family:'Manrope',sans-serif;font-weight:700;font-size:15.5px;letter-spacing:.005em;color:var(--ink);white-space:nowrap;}
+  #wordmark small{display:block;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:9.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--sub2);margin-top:3px;}
   .divider{width:1px;align-self:stretch;margin:12px 2px;background:var(--border);}
 
   #toolbar button, #toolbar input[type=text]{
@@ -71,37 +90,135 @@
   #toolbar button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;}
   #toolbar button.primary:hover{filter:brightness(1.08);}
   #toolbar button.icon-btn{padding:7px 9px;}
-  #search{width:190px;cursor:text;}
+  #searchWrap{position:relative;width:200px;}
+  #search{width:100%;cursor:text;}
   #search:focus, #toolbar select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
-  #zoomlabel{font-size:12px;color:var(--sub);min-width:38px;text-align:center;font-variant-numeric:tabular-nums;}
+  #searchResults{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--panel);border:1px solid var(--border);
+    border-radius:10px;box-shadow:var(--shadow-lg);max-height:230px;overflow-y:auto;display:none;z-index:80;}
+  #searchResults .res{padding:7px 11px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--ink);}
+  #searchResults .res:hover{background:var(--accent-soft);}
+  #searchResults .res .rn{flex:1;min-width:0;}
+  #searchResults .res .g{color:var(--sub2);font-size:10.5px;white-space:nowrap;}
   .spacer{flex:1;}
-  #legend{font-size:11.5px;color:var(--sub);display:flex;gap:14px;align-items:center;white-space:nowrap;}
-  #legend span{display:inline-flex;align-items:center;gap:5px;}
-  #legend .swatch{width:16px;height:2px;display:inline-block;border-radius:2px;}
-  #legend .dot{width:8px;height:8px;border-radius:50%;background:var(--uncertain);display:inline-block;}
 
-  #canvas-wrap{position:absolute;top:60px;left:0;right:0;bottom:130px;overflow:auto;color:var(--ink);
-      background:
-      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22260%22%3E%3Ctext%20x%3D%2240%22%20y%3D%22190%22%20font-size%3D%22160%22%20font-family%3D%22Georgia%2C%20%27Songti%20SC%27%2C%20serif%22%20fill%3D%22%230f172a%22%20opacity%3D%220.05%22%3E%E9%BB%84%3C/text%3E%3C/svg%3E") 0 0/260px 260px,
-      radial-gradient(circle at 18px 18px, var(--canvas-dot) 1.4px, transparent 1.4px) 0 0/26px 26px, var(--bg);}
-  /* Dark mode needs its own pass with a light-colored glyph baked in — a data-URI
-     background image doesn't inherit the page's `color`, so `currentColor` inside
-     one silently renders black regardless of theme (invisible on a dark ground). */
-  [data-theme="dark"] #canvas-wrap{
-      background:
-      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22260%22%3E%3Ctext%20x%3D%2240%22%20y%3D%22190%22%20font-size%3D%22160%22%20font-family%3D%22Georgia%2C%20%27Songti%20SC%27%2C%20serif%22%20fill%3D%22%23e7ebf3%22%20opacity%3D%220.06%22%3E%E9%BB%84%3C/text%3E%3C/svg%3E") 0 0/260px 260px,
-      radial-gradient(circle at 18px 18px, var(--canvas-dot) 1.4px, transparent 1.4px) 0 0/26px 26px, var(--bg);}
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]) #canvas-wrap{
-      background:
-      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22260%22%3E%3Ctext%20x%3D%2240%22%20y%3D%22190%22%20font-size%3D%22160%22%20font-family%3D%22Georgia%2C%20%27Songti%20SC%27%2C%20serif%22%20fill%3D%22%23e7ebf3%22%20opacity%3D%220.06%22%3E%E9%BB%84%3C/text%3E%3C/svg%3E") 0 0/260px 260px,
-      radial-gradient(circle at 18px 18px, var(--canvas-dot) 1.4px, transparent 1.4px) 0 0/26px 26px, var(--bg);}
-  }
+  #breadcrumb{flex:none;height:32px;padding:0 20px;font-size:11.5px;color:var(--sub);
+    display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border-soft);
+    background:var(--bg);z-index:30;white-space:nowrap;overflow-x:auto;}
+  #breadcrumb .crumb{cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:4px;}
+  #breadcrumb .crumb:hover{color:var(--accent);}
+  #breadcrumb .sep{display:flex;color:var(--sub2);opacity:.7;}
+  #breadcrumb .current{color:var(--ink);font-weight:700;}
+  #breadcrumb .dots{color:var(--sub2);letter-spacing:1px;}
+
+  #stage{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;padding:30px 24px 40px;
+    background:var(--bg);}
+
+  .tierLabel{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;
+    font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub2);margin-bottom:10px;}
+  .tierLabel svg{color:var(--accent);}
+  .tier{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;position:relative;}
+  .tier-anc-1 .card{opacity:.6;padding:9px 13px;}
+  .tier-anc-1 .card .name{font-size:12px;}
+  .tier-anc-1 .card .dates{font-size:10px;}
+  .tier-anc-2 .card{opacity:.78;padding:10px 14px;}
+  .tier-anc-2 .card .name{font-size:12.5px;}
+  .tier-anc-3 .card{padding:11px 15px;}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:13px 17px;
+    box-shadow:var(--shadow);cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;
+    text-align:left;position:relative;display:flex;align-items:center;gap:9px;}
+  .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--accent);}
+  .card .txt{min-width:0;}
+  .card .name{font-family:'Manrope',sans-serif;font-weight:600;color:var(--ink);font-size:13.5px;white-space:nowrap;}
+  .card .dates{color:var(--sub);font-variant-numeric:tabular-nums;letter-spacing:.01em;font-size:11px;margin-top:1px;}
+  .card.uncertain{border-color:var(--uncertain);}
+  .card.uncertain::after{content:"?";position:absolute;top:-7px;right:-7px;background:var(--uncertain);color:#fff;
+    width:16px;height:16px;border-radius:50%;font-size:10px;line-height:16px;text-align:center;font-weight:700;
+    box-shadow:0 0 0 2px var(--bg);}
+  .child-card{background:var(--accent-soft);border-color:var(--accent);}
+
+  #focusRow{display:flex;align-items:flex-start;gap:26px;justify-content:center;flex-wrap:wrap;width:100%;}
+  #siblingsCol{display:flex;flex-direction:column;gap:7px;align-items:flex-end;padding-top:20px;max-width:160px;min-width:60px;}
+  #siblingsCol .sibLabel{display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--sub2);margin-bottom:2px;}
+  #siblingsCol .sibLabel svg{color:var(--sub2);}
+  .sib-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:5px 12px 5px 5px;font-size:11.5px;
+    font-weight:500;cursor:pointer;box-shadow:var(--shadow);white-space:nowrap;display:flex;align-items:center;gap:7px;color:var(--ink);}
+  .sib-card:hover{border-color:var(--accent);color:var(--accent);}
+  .sib-card.uncertain{border-color:var(--uncertain);color:var(--uncertain);}
+
+  #focusCard{background:var(--panel);border:1.6px solid var(--ink);border-radius:16px;padding:26px 34px;
+    box-shadow:var(--shadow-lg);text-align:center;min-width:250px;max-width:340px;position:relative;}
+  #focusCard .name{font-family:'Manrope',sans-serif;font-weight:700;font-size:22px;color:var(--ink);line-height:1.22;}
+  #focusCard .gen{display:flex;align-items:center;justify-content:center;gap:5px;font-size:10px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-top:8px;}
+  #focusCard .dates{font-size:13px;color:var(--sub);margin-top:9px;font-variant-numeric:tabular-nums;}
+  #focusCard .note{font-size:12px;color:var(--sub);margin-top:14px;line-height:1.55;text-align:left;
+    border-top:1px solid var(--border-soft);padding-top:13px;display:flex;gap:7px;}
+  #focusCard .note svg{flex:none;margin-top:2px;color:var(--sub2);}
+  #focusCard .uncertainBadge{position:absolute;top:-11px;right:-11px;background:var(--uncertain);color:#fff;
+    width:25px;height:25px;border-radius:50%;font-size:12.5px;font-weight:700;display:flex;align-items:center;
+    justify-content:center;box-shadow:0 0 0 3px var(--bg);}
+  #focusCard .cardSeal{position:absolute;bottom:11px;right:13px;width:21px;height:21px;border:1px solid var(--uncertain);
+    border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--uncertain);font-size:12px;
+    line-height:1;opacity:.5;transform:rotate(-6deg);pointer-events:none;
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC","Songti SC",serif;}
+  #focusCard .editBadge{position:absolute;top:-11px;left:-11px;width:25px;height:25px;border-radius:50%;
+    background:var(--panel);border:1px solid var(--border);color:var(--sub);display:flex;align-items:center;
+    justify-content:center;box-shadow:var(--shadow);cursor:pointer;transition:color .15s,border-color .15s;}
+  #focusCard .editBadge:hover{color:var(--accent);border-color:var(--accent);}
+
+  #spouseCards{display:flex;flex-direction:column;gap:8px;padding-top:20px;max-width:200px;}
+  .spouse-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:9px;padding:8px 13px;
+    font-size:12px;color:var(--ink);display:flex;align-items:center;gap:9px;font-weight:500;}
+  .spouse-note{font-weight:400;color:var(--sub);font-size:11px;margin-top:2px;line-height:1.4;}
+
+  .vline{width:1.4px;height:32px;background:var(--border);margin:2px auto;}
+
+  #descendantsOuter{width:100%;}
+  #descendantsWrap{display:flex;flex-wrap:nowrap;justify-content:center;align-items:flex-start;gap:22px;
+    width:100%;overflow-x:auto;padding:2px 4px 16px;}
+  #descendantsWrap::-webkit-scrollbar{height:6px;}
+  #descendantsWrap::-webkit-scrollbar-track{background:transparent;}
+  #descendantsWrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  #descendantsWrap:hover::-webkit-scrollbar-thumb{background:var(--accent);}
+  .childGroup{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;}
+  .mini-vline{width:1.2px;height:16px;background:var(--border-soft);margin:6px auto;}
+  .gkidsRow{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;max-width:210px;}
+  .gkid-chip{border-radius:16px;padding:4px 10px 4px 4px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;
+    border:1px solid var(--border);background:var(--uncertain-soft);color:var(--ink);display:inline-flex;align-items:center;gap:6px;position:relative;}
+  .gkid-chip:hover{border-color:var(--accent);color:var(--accent);}
+  .gkid-chip.uncertain{border-color:var(--uncertain);}
+  .gkid-chip.uncertain::after{content:"?";position:absolute;top:-6px;right:-6px;background:var(--uncertain);color:#fff;
+    width:13px;height:13px;border-radius:50%;font-size:8.5px;line-height:13px;text-align:center;font-weight:700;
+    box-shadow:0 0 0 2px var(--bg);}
+
+  #noChildren{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:500;
+    color:var(--sub2);text-align:center;width:100%;font-style:normal;}
+
+  /* a small card-like backing plate sitting just behind the portrait */
+  #bigPortraitBacking{position:absolute;top:104px;right:14px;width:204px;height:256px;z-index:54;
+    background:var(--panel);border-radius:18px;
+    box-shadow:0 18px 36px oklch(20% 0 0 / .16),0 2px 8px oklch(20% 0 0 / .1);
+    opacity:0;transform:translateY(-10px) scale(.95);pointer-events:none;
+    transition:opacity .32s ease,transform .32s ease;}
+  #bigPortraitBacking.show{opacity:1;transform:translateY(0) scale(1);}
+  #bigPortrait{position:absolute;top:116px;right:30px;width:176px;height:224px;z-index:55;
+    pointer-events:none;opacity:0;transform:translateY(-10px) scale(.95);
+    transition:opacity .32s ease,transform .32s ease;background-size:cover;background-position:center center;
+    -webkit-mask-image:radial-gradient(ellipse 58% 54% at 50% 46%, black 48%, transparent 88%);
+    mask-image:radial-gradient(ellipse 58% 54% at 50% 46%, black 48%, transparent 88%);
+    display:flex;align-items:center;justify-content:center;font-family:'Manrope',sans-serif;font-weight:700;
+    font-size:52px;filter:drop-shadow(0 12px 26px oklch(20% 0 0 / .22));
+    text-shadow:0 2px 4px oklch(15% 0 0 / .55),0 0 2px oklch(15% 0 0 / .4);}
+  #bigPortrait.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;cursor:pointer;}
+  @media (max-width:760px){ #bigPortrait{display:none;} #bigPortraitBacking{display:none;} }
 
   /* Activity log -- a permanent strip below the chart (not another layer on
      top of it), so it never competes with the tree itself for space. */
   #activityBar{
-    position:absolute;left:0;right:0;bottom:0;height:130px;background:var(--panel);
+    flex:none;height:130px;background:var(--panel);
     border-top:1px solid var(--border);border-radius:0 0 16px 16px;display:flex;flex-direction:column;z-index:40;
   }
   #activityBar h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:0;padding:9px 16px 6px;flex:none;}
@@ -119,55 +236,21 @@
     #activityBar .body{padding:0 12px 6px;}
   }
 
-  #canvas{position:relative;transform-origin:0 0;}
-  svg#lines{position:absolute;top:0;left:0;pointer-events:none;}
-
-  .node{
-    position:absolute;background:var(--panel);border:1px solid var(--border);border-top-width:3px;border-radius:var(--radius);
-    padding:9px 13px 10px;font-size:13px;line-height:1.45;cursor:pointer;box-shadow:var(--shadow);
-    min-width:168px; max-width:246px;transition:box-shadow .15s,border-color .15s,transform .15s;
-  }
-  .node:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);z-index:4;}
-  .node-row{display:flex;align-items:center;gap:9px;}
-  .node-row .txt{min-width:0;flex:1;}
-  .node .name{font-weight:700;color:var(--ink);letter-spacing:-.01em;font-size:13.5px;}
-  .node .dates{color:var(--sub);font-size:11.5px;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:.01em;}
-  .node .spouse{color:var(--accent2);font-size:11.5px;margin-top:3px;font-weight:600;}
-  .node .spouse::before{content:"⚭ ";}
-  .node .note-flag{
-    position:absolute; bottom:5px; right:7px; width:14px;height:14px;border-radius:50%;
-    background:var(--accent-soft); color:var(--accent2); opacity:.85;
-    display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;
-  }
-
   /* photo avatars — colored initials by default (exactly one gold, one red — the
      Wong-family palette, not a coded system); a real uploaded photo drops into the
      same slot automatically once someone adds one */
   .avatar{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
     font-family:inherit;font-weight:700;letter-spacing:.01em;background-size:cover;background-position:center;
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
+  .avatar-xs{width:18px;height:18px;font-size:7.5px;}
   .avatar-sm{width:30px;height:30px;font-size:11.5px;}
+  .avatar-md{width:38px;height:38px;font-size:13.5px;}
   .avatar-lg{width:78px;height:78px;font-size:23px;margin:0 auto 10px;position:relative;}
-  .node.uncertain{border-color:var(--uncertain);}
-  .node.uncertain::after{
-    content:"?"; position:absolute; top:-7px; right:-7px; background:var(--uncertain); color:#fff;
-    width:16px;height:16px;border-radius:50%;font-size:10.5px;line-height:16px;text-align:center;font-weight:700;
-    box-shadow:0 0 0 2px var(--panel);
-  }
-  .node.root{border-width:2px;box-shadow:0 0 0 4px var(--accent-soft), var(--shadow-lg);}
-  .node.root::before{
-    content:"🌳"; position:absolute; top:-11px; left:-11px; width:22px;height:22px;border-radius:50%;
-    background:var(--panel); border:1px solid var(--border); display:flex;align-items:center;justify-content:center;
-    font-size:12px; box-shadow:var(--shadow);
-  }
-  .gen-label{
-    position:absolute; top:16px; font-size:11.5px; font-weight:700; letter-spacing:.03em;
-    color:#fff; padding:5px 13px 5px 11px; border-radius:999px; white-space:nowrap;
-    box-shadow:var(--shadow); text-transform:uppercase; display:flex; align-items:center; gap:5px;
-  }
-  .gen-label::before{content:"";width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.85);
-    transform:rotate(45deg);flex:none;}
-  .node.highlight{outline:3px solid #facc15; outline-offset:1px; z-index:5;}
+  #focusCard .avatar-lg-wrap{position:relative;display:inline-block;cursor:pointer;}
+  #focusCard .avatar-lg-wrap .addPhoto{position:absolute;right:-3px;bottom:9px;width:24px;height:24px;border-radius:50%;
+    background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 3px var(--panel);opacity:0;transform:scale(.7);transition:opacity .15s,transform .15s;}
+  #focusCard:hover .addPhoto{opacity:1;transform:scale(1);}
 
   /* Editor drawer — absolute within #app, so it never covers anything
      outside this widget's own box (the host page's nav included). */
@@ -221,25 +304,33 @@
   ::-webkit-scrollbar-thumb:hover{background:var(--sub2);}
 
   /* ---------- phone / narrow-screen layout ----------
-     Collapse the toolbar to icon-only buttons and drop the legend so it
-     takes 2 compact rows instead of 6, and give the tree itself most of
-     the widget's height back. */
+     Collapse the toolbar to icon-only buttons and tighten the focus-view
+     spacing so the stage keeps most of the widget's height. */
   @media (max-width: 720px){
     #toolbar{padding:8px 10px;gap:6px;}
-    #toolbar h1{font-size:14px;margin-right:2px;}
-    #toolbar h1 .logo-dot{width:19px;height:19px;}
-    #search{width:auto;flex:1 1 130px;font-size:12.5px;padding:7px 10px;}
+    #wordmark{font-size:13px;}
+    #wordmark small{display:none;}
+    #searchWrap{width:auto;flex:1 1 130px;}
+    #search{font-size:12.5px;padding:7px 10px;}
     #toolbar button{padding:7px 9px;font-size:12.5px;}
     .lbl{display:none;}
-    #legend{display:none;}
     .divider{margin:8px 1px;}
     #app{height:min(88vh, 900px);border-radius:10px;}
     #toolbar{border-radius:10px 10px 0 0;}
-    #canvas-wrap{border-radius:0 0 10px 10px;}
+    #breadcrumb{font-size:10.5px;padding:0 12px;}
+    #stage{padding:20px 14px 32px;}
+    #focusRow{gap:16px;}
+    #focusCard{padding:20px 22px;min-width:0;width:100%;max-width:300px;}
+    #focusCard .name{font-size:19px;}
+    #siblingsCol{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:center;
+      max-width:100%;padding-top:6px;gap:6px;}
+    #siblingsCol .sibLabel{flex-basis:100%;justify-content:center;margin-bottom:0;}
+    #spouseCards{max-width:100%;padding-top:6px;}
+    .gkidsRow{max-width:160px;}
   }
   @media (max-width: 720px) and (hover: none){
     /* touch devices: slightly larger tap targets on cards */
-    .node{padding:10px 13px 11px;}
+    .card{padding:10px 13px 11px;}
   }
 </style>
 </head>
@@ -247,26 +338,17 @@
 
 <div id="app">
 <div id="toolbar">
-  <h1><span class="logo-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 3v6"/><path d="M12 9c-3.5 0-5.5 2-5.5 4.5S8.5 17 12 17s5.5-1.5 5.5-4.5S15.5 9 12 9z"/>
-      <path d="M12 17v4"/><circle cx="7" cy="20" r="1.6" fill="currentColor" stroke="none"/>
-      <circle cx="12" cy="21" r="1.6" fill="currentColor" stroke="none"/><circle cx="17" cy="20" r="1.6" fill="currentColor" stroke="none"/>
-      <path d="M7 20v-3M17 20v-3"/></svg></span>The Wong Family</h1>
+  <div id="seal"><span>黃</span></div>
+  <div id="wordmark">The Wong Family<small>Est. Guangdong Province</small></div>
   <div class="divider"></div>
-  <input type="text" id="search" placeholder="🔍 Search a name…">
+  <div id="searchWrap">
+    <input type="text" id="search" placeholder="Jump to a name…" autocomplete="off">
+    <div id="searchResults"></div>
+  </div>
   <button id="btnAdd">＋<span class="lbl"> Add person</span></button>
   <div class="divider"></div>
-  <button id="btnZoomOut" class="icon-btn" title="Zoom out">−</button>
-  <span id="zoomlabel">100%</span>
-  <button id="btnZoomIn" class="icon-btn" title="Zoom in">+</button>
-  <button id="btnFit" title="Fit whole tree to screen">▣<span class="lbl"> Fit to screen</span></button>
+  <button id="btnRoot" title="Start from the top">⌂<span class="lbl"> Start from the top</span></button>
   <button id="btnFullscreen" class="icon-btn" title="Expand to fullscreen">⛶</button>
-  <div class="spacer"></div>
-  <div id="legend">
-    <span><span class="swatch" style="background:var(--line-clear)"></span>clear bracket</span>
-    <span><span class="swatch" style="background:var(--line-pos);border-top:2px dashed var(--line-pos)"></span>positional guess</span>
-    <span><span class="dot"></span>flagged uncertain</span>
-  </div>
   <div class="spacer"></div>
   <button id="btnTheme" class="icon-btn" title="Toggle light/dark">🌙</button>
   <div class="divider"></div>
@@ -276,11 +358,10 @@
   <input type="file" id="fileimport" accept=".json">
 </div>
 
-<div id="canvas-wrap">
-  <div id="canvas">
-    <svg id="lines"></svg>
-  </div>
-</div>
+<div id="breadcrumb"></div>
+<div id="stage"></div>
+<div id="bigPortraitBacking"></div>
+<div id="bigPortrait"></div>
 
 <div id="activityBar">
   <h2>Recent activity</h2>
@@ -2907,8 +2988,6 @@
   let DATA = [];
   let CHANGELOG = [];
   let editingId = null; // null while adding a new person
-  let scale = 1;
-  let hasFit = false;
 
   // A visitor's browser only ever sees a NEW publish of this file if the file's
   // own embedded data differs from whatever this browser saw last time — so we
@@ -3003,14 +3082,6 @@
     return "p" + n;
   }
 
-  // ---------- layout ----------
-  // Generation columns run left-to-right (this suits the data far better than a
-  // top-down/vertical layout: generation sizes here range from 1 person to 70+,
-  // so a vertical layout would force some rows to be absurdly wide. Columns let
-  // every generation just scroll vertically at a consistent, readable width).
-  const PALETTE = ["#4f46e5","#0d9488","#b45309","#be185d","#0369a1","#6d28d9","#15803d","#9333ea","#c2410c","#0e7490"];
-  function genColor(i){ return PALETTE[i % PALETTE.length]; }
-
   // ---------- photo avatars ----------
   // Colored-initials avatar by default; a real uploaded photo (person.photoUrl) takes
   // over the same slot automatically. Exactly one gold, one red — no shade variation —
@@ -3040,143 +3111,217 @@
     return `<div class="avatar ${sizeClass}" style="background:oklch(${sh.l}% ${sh.c} ${sh.h});color:${fg};text-shadow:${shadow}">${getInitials(p.name)}</div>`;
   }
 
-  const COL_W = 300;
-  const NODE_GAP = 16;        // vertical gap between two nodes in the same sibling group
-  const GROUP_GAP = 34;       // extra gap when a new sibling group (different parent) begins
-  const TOP_PAD = 56;         // room for the sticky-look generation label
+  const ICON = {
+    spouse: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg>',
+    note:   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h9M8 13h9M8 17h5"/></svg>',
+    layers: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 13l9 5 9-5"/></svg>',
+    chevUp: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16l7-7 7 7" opacity=".45"/><path d="M5 11l7-7 7 7"/></svg>',
+    chevDown:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l7 7 7-7" opacity=".45"/><path d="M5 13l7 7 7-7"/></svg>',
+    people: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15 20c.3-2.7 1.8-4.6 4-4.9"/></svg>',
+    dash:   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>',
+    chevron:'<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+    camera: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>',
+    pencil: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
+  };
 
-  function buildOrder(){
-    // group siblings together (depth-first over parent links), falling back to
-    // original array order for roots / orphans.
-    const childrenOf = {};
-    DATA.forEach(p => {
-      const key = p.parent || "__root__";
-      (childrenOf[key] = childrenOf[key] || []).push(p);
-    });
-    const order = [];
-    const visited = new Set();
-    function visit(p){
-      if (visited.has(p.id)) return;
-      visited.add(p.id);
-      order.push(p);
-      (childrenOf[p.id] || []).forEach(visit);
+  // ---------- Focus View: one person at a time, click any relative to re-center ----------
+  function kids(id){ return DATA.filter(p => (p.parent || null) === id); }
+  function ancestorsOf(id){
+    const chain = []; let cur = byId(id);
+    while (cur && cur.parent && byId(cur.parent)) { chain.push(cur.parent); cur = byId(cur.parent); }
+    return chain;
+  }
+
+  function cardHtml(p, extraClass){
+    const cls = "card " + (extraClass||"") + (p.uncertain ? " uncertain" : "");
+    return `<div class="${cls}" data-id="${p.id}">
+      ${avatarHtml(p, "avatar-sm")}
+      <div class="txt">
+        <div class="name">${escapeHtml(p.name)}</div>
+        ${p.dates ? `<div class="dates">${escapeHtml(p.dates)}</div>` : ""}
+      </div>
+    </div>`;
+  }
+
+  function ancestorTier(p, cls, label){
+    if (!p) return "";
+    return `<div class="tierLabel">${ICON.chevUp}${label}</div><div class="tier ${cls}">${cardHtml(p)}</div><div class="vline"></div>`;
+  }
+
+  // the larger, feathered "cameo portrait" that surfaces top-right on tap
+  let bigPortraitOpen = false;
+  function updateBigPortrait(p){
+    const bp = document.getElementById("bigPortrait");
+    if (p.photoUrl){
+      bp.style.backgroundImage = `url('${p.photoUrl}')`;
+      bp.style.color = "transparent";
+      bp.textContent = "";
+    } else {
+      const sh = avatarShade(p.name);
+      bp.style.backgroundImage = `linear-gradient(160deg, oklch(${Math.min(96,sh.l+6)}% ${sh.c*0.9} ${sh.h}), oklch(${Math.max(20,sh.l-10)}% ${sh.c} ${sh.h}))`;
+      bp.style.color = sh.l > 65 ? "oklch(18% 0.01 90)" : "oklch(99% 0.005 90)";
+      bp.style.textShadow = sh.l > 65 ? "none" : "0 2px 4px oklch(15% 0 0 / .55),0 0 2px oklch(15% 0 0 / .4)";
+      bp.textContent = getInitials(p.name);
     }
-    DATA.forEach(p => { if(!p.parent) visit(p); });
-    DATA.forEach(p => visit(p)); // orphans / broken refs
-    return order;
   }
+  function toggleBigPortrait(p){
+    const bp = document.getElementById("bigPortrait");
+    const backing = document.getElementById("bigPortraitBacking");
+    bigPortraitOpen = !bigPortraitOpen;
+    if (bigPortraitOpen){
+      updateBigPortrait(p);
+      bp.classList.add("show"); backing.classList.add("show");
+      bp.onclick = () => toggleBigPortrait(p);
+    } else {
+      bp.classList.remove("show"); backing.classList.remove("show");
+      bp.onclick = null;
+    }
+  }
+  function closeBigPortrait(){
+    bigPortraitOpen = false;
+    document.getElementById("bigPortrait").classList.remove("show");
+    document.getElementById("bigPortraitBacking").classList.remove("show");
+  }
+  document.addEventListener("click", (e) => {
+    if (!bigPortraitOpen) return;
+    if (e.target.closest("#bigPortrait") || e.target.closest(".avatar-lg-wrap")) return;
+    closeBigPortrait();
+  });
 
-  // ---------- render (measures real card sizes before placing them, so
-  // variable-length names/dates/spouse lines never overlap) ----------
-  function render(){
-    const gens = [...new Set(DATA.map(p => p.gen))].sort((a,b)=>a-b);
-    const colX = {};
-    gens.forEach((g,i) => colX[g] = 40 + i*COL_W);
-    const order = buildOrder();
+  let currentId = null;
 
-    const canvas = document.getElementById("canvas");
-    const svg = document.getElementById("lines");
-    canvas.querySelectorAll(".node, .gen-label").forEach(el => el.remove());
-    svg.innerHTML = "";
+  function render(id){
+    if (!id || !byId(id)) {
+      const roots = DATA.filter(p => !p.parent);
+      id = (roots[0] || DATA[0] || {}).id;
+      if (!id) return; // no data at all
+    }
+    currentId = id;
+    const p = byId(id);
+    const stage = document.getElementById("stage");
+    stage.style.opacity = "0";
 
-    // Pass 1: create every card (off-flow, invisible) so the browser can tell
-    // us its real rendered height/width, then measure them all at once.
-    const els = {};
-    order.forEach(p => {
-      const div = document.createElement("div");
-      div.className = "node" + (p.uncertain ? " uncertain" : "") + (!p.parent ? " root" : "");
-      div.style.visibility = "hidden";
-      div.style.left = "0px"; div.style.top = "0px";
-      div.style.borderTopColor = genColor(gens.indexOf(p.gen));
-      div.dataset.id = p.id;
-      const spouseNames = (p.spouses || []).map(s => s.name).filter(Boolean).join("; ");
-      div.innerHTML =
-        `<div class="node-row">` +
-          avatarHtml(p, "avatar-sm") +
-          `<div class="txt">` +
-            `<div class="name">${escapeHtml(p.name)}</div>` +
-            (p.dates ? `<div class="dates">${escapeHtml(p.dates)}</div>` : "") +
-            (spouseNames ? `<div class="spouse">${escapeHtml(spouseNames)}</div>` : "") +
-          `</div>` +
-        `</div>` +
-        (p.note ? `<div class="note-flag" title="Has a note — click to read">✎</div>` : "");
-      div.addEventListener("click", () => openEditor(p.id));
-      canvas.appendChild(div);
-      els[p.id] = div;
+    const parentId = ancestorsOf(id)[0];
+    const parent = parentId ? byId(parentId) : null;
+    const grandId = parent ? ancestorsOf(parent.id)[0] : null;
+    const grand = grandId ? byId(grandId) : null;
+    const greatGrandId = grand ? ancestorsOf(grand.id)[0] : null;
+    const greatGrand = greatGrandId ? byId(greatGrandId) : null;
+    const siblings = parent ? kids(parent.id).filter(s => s.id !== p.id) : [];
+    const children = kids(p.id);
+    const spouses = (Array.isArray(p.spouses) ? p.spouses : [])
+      .map(s => ({name:(s.name||"").trim(), note:(s.note||"").trim()})).filter(s=>s.name);
+
+    let html = "";
+    html += ancestorTier(greatGrand, "tier-anc-1", "Great-grandparent");
+    html += ancestorTier(grand, "tier-anc-2", "Grandparent");
+    html += ancestorTier(parent, "tier-anc-3", "Parent");
+
+    html += `<div id="focusRow">`;
+    if (siblings.length){
+      html += `<div id="siblingsCol"><div class="sibLabel">${ICON.people}${siblings.length} sibling${siblings.length===1?"":"s"}</div>` +
+        siblings.map(s => `<div class="sib-card${s.uncertain?" uncertain":""}" data-id="${s.id}">${avatarHtml(s,"avatar-xs")}<span>${escapeHtml(s.name)}</span></div>`).join("") + `</div>`;
+    } else { html += `<div style="width:1px"></div>`; }
+
+    html += `<div id="focusCard">`;
+    html += `<div class="editBadge" title="Edit ${escapeHtml(p.name)}">${ICON.pencil}</div>`;
+    if (p.uncertain) html += `<div class="uncertainBadge">?</div>`;
+    html += `<div class="avatar-lg-wrap">${avatarHtml(p,"avatar-lg")}<div class="addPhoto" title="Add/edit photo">${ICON.camera}</div></div>`;
+    html += `<div class="gen">${ICON.layers}Generation ${p.gen}</div>`;
+    html += `<div class="name">${escapeHtml(p.name)}</div>`;
+    if (p.dates) html += `<div class="dates">${escapeHtml(p.dates)}</div>`;
+    if (p.note) html += `<div class="note">${ICON.note}<span>${escapeHtml(p.note)}</span></div>`;
+    html += `<div class="cardSeal">黃</div>`;
+    html += `</div>`;
+
+    if (spouses.length){
+      html += `<div id="spouseCards">` + spouses.map(s => `<div class="spouse-card">${avatarHtml({id:"spouse-"+s.name, name:s.name},"avatar-sm")}<div><span>${escapeHtml(s.name)}</span>${s.note?`<div class="spouse-note">${escapeHtml(s.note)}</div>`:""}</div></div>`).join("") + `</div>`;
+    } else { html += `<div style="width:1px"></div>`; }
+    html += `</div>`; // #focusRow
+
+    if (children.length){
+      html += `<div class="vline"></div>`;
+      html += `<div class="tierLabel">${ICON.chevDown}Children (${children.length})</div>`;
+      html += `<div id="descendantsOuter"><div id="descendantsWrap">` + children.map(c => {
+        const gkids = kids(c.id);
+        let group = `<div class="childGroup">${cardHtml(c, "child-card")}`;
+        if (gkids.length){
+          group += `<div class="mini-vline"></div><div class="gkidsRow">` +
+            gkids.map(g => `<div class="gkid-chip${g.uncertain?" uncertain":""}" data-id="${g.id}">${avatarHtml(g,"avatar-xs")}<span>${escapeHtml(g.name)}</span></div>`).join("") + `</div>`;
+        }
+        group += `</div>`;
+        return group;
+      }).join("") + `</div></div>`;
+    } else {
+      html += `<div class="vline"></div><div id="noChildren">${ICON.dash}No recorded children</div>`;
+    }
+
+    stage.innerHTML = html;
+    requestAnimationFrame(() => { stage.style.transition = "opacity .22s ease"; stage.style.opacity = "1"; });
+
+    stage.querySelectorAll("[data-id]").forEach(el => {
+      el.addEventListener("click", () => render(el.dataset.id));
     });
-    const size = {};
-    order.forEach(p => {
-      const el = els[p.id];
-      size[p.id] = { w: el.offsetWidth, h: el.offsetHeight };
-    });
+    stage.scrollTop = 0;
+    const dw = document.getElementById("descendantsWrap");
+    if (dw) dw.scrollLeft = Math.max(0, (dw.scrollWidth - dw.clientWidth) / 2);
 
-    // Pass 2: walk each generation's nodes in order, stacking them with a
-    // normal gap, and a wider gap whenever the sibling group (parent) changes,
-    // so families read as visually distinct clusters instead of one wall of boxes.
-    const pos = {};
-    gens.forEach(g => {
-      let y = TOP_PAD;
-      let lastParent = undefined;
-      order.filter(p => p.gen === g).forEach(p => {
-        if (lastParent !== undefined && p.parent !== lastParent) y += GROUP_GAP - NODE_GAP;
-        const { w, h } = size[p.id];
-        pos[p.id] = { x: colX[g], y, w, h, gen: g };
-        y += h + NODE_GAP;
-        lastParent = p.parent;
+    // navigating away from a person always closes their portrait
+    closeBigPortrait();
+    const wrap = stage.querySelector(".avatar-lg-wrap");
+    if (wrap){
+      wrap.addEventListener("click", (e) => {
+        if (e.target.closest(".addPhoto")) return; // that icon has its own job (below)
+        toggleBigPortrait(p);
       });
-    });
+    }
+    const addPhotoBtn = stage.querySelector(".addPhoto");
+    if (addPhotoBtn) addPhotoBtn.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
+    const editBadge = stage.querySelector(".editBadge");
+    if (editBadge) editBadge.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
 
-    const maxY = Math.max(200, ...Object.values(pos).map(v => v.y + v.h)) + 80;
-    const maxX = colX[gens[gens.length-1]] + COL_W;
-    canvas.style.width = maxX + "px";
-    canvas.style.height = maxY + "px";
-    svg.setAttribute("width", maxX);
-    svg.setAttribute("height", maxY);
-
-    // generation labels
-    gens.forEach((g,i) => {
-      const lbl = document.createElement("div");
-      lbl.className = "gen-label";
-      lbl.style.left = colX[g] + "px";
-      lbl.style.background = genColor(i);
-      lbl.textContent = "Generation " + g;
-      canvas.appendChild(lbl);
-    });
-
-    // connector lines (drawn from each parent's true right edge/mid-height to
-    // each child's true left edge/mid-height, so they always meet the cards
-    // exactly regardless of card size)
-    DATA.forEach(p => {
-      if (!p.parent) return;
-      const a = pos[p.parent], b = pos[p.id];
-      if (!a || !b) return;
-      const x1 = a.x + a.w, y1 = a.y + a.h/2;
-      const x2 = b.x, y2 = b.y + b.h/2;
-      const mid = (x1 + x2) / 2;
-      const path = document.createElementNS("http://www.w3.org/2000/svg","path");
-      path.setAttribute("d", `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`);
-      path.setAttribute("fill","none");
-      const positional = p.confidence === "positional";
-      const depthIdx = gens.indexOf(b.gen); // branches taper as the tree fans out into later generations
-      const width = Math.max(positional ? 1.0 : 1.15, (positional ? 2.0 : 2.7) - depthIdx * 0.16);
-      path.setAttribute("stroke", positional ? "var(--line-pos)" : "var(--line-clear)");
-      path.setAttribute("stroke-width", width.toFixed(2));
-      path.setAttribute("stroke-linecap","round");
-      if (positional) path.setAttribute("stroke-dasharray","5,4");
-      svg.appendChild(path);
-    });
-
-    // reveal the cards at their final, measured positions
-    order.forEach(p => {
-      const xy = pos[p.id];
-      const el = els[p.id];
-      el.style.left = xy.x + "px";
-      el.style.top = xy.y + "px";
-      el.style.visibility = "visible";
-    });
-
-    applyZoom();
+    renderBreadcrumb(id);
   }
+
+  function renderBreadcrumb(id){
+    const chain = ancestorsOf(id).reverse().concat([id]); // root -> ... -> self
+    let shown = chain;
+    if (chain.length > 6) { shown = [chain[0], chain[1], "…", chain[chain.length-2], chain[chain.length-1]]; }
+    const bc = document.getElementById("breadcrumb");
+    bc.innerHTML = shown.map((cid,i) => {
+      const isLast = i === shown.length-1;
+      if (cid === "…") return `<span class="dots">···</span>`;
+      const person = byId(cid);
+      if (!person) return "";
+      const name = escapeHtml(person.name);
+      const icon = i === 0 ? `<span class="miniSeal">黃</span>` : "";
+      const sep = isLast ? "" : `<span class="sep">${ICON.chevron}</span>`;
+      return (isLast ? `<span class="current">${name}</span>` : `<span class="crumb" data-id="${cid}">${icon}${name}</span>`) + sep;
+    }).join("");
+    bc.querySelectorAll(".crumb").forEach(el => el.addEventListener("click", () => render(el.dataset.id)));
+  }
+
+  // ---------- search (jump to a person, doesn't just highlight) ----------
+  const searchInput = document.getElementById("search");
+  const resultsBox = document.getElementById("searchResults");
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) { resultsBox.style.display = "none"; return; }
+    const matches = DATA.filter(p => p.name.toLowerCase().includes(q)).slice(0, 12);
+    if (!matches.length) { resultsBox.style.display = "none"; return; }
+    resultsBox.innerHTML = matches.map(p => `<div class="res" data-id="${p.id}"><span class="rn">${escapeHtml(p.name)}</span><span class="g">Gen. ${p.gen}</span></div>`).join("");
+    resultsBox.style.display = "block";
+    resultsBox.querySelectorAll(".res").forEach(el => el.addEventListener("click", () => {
+      render(el.dataset.id); resultsBox.style.display = "none"; searchInput.value = "";
+    }));
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest("#searchWrap")) resultsBox.style.display = "none"; });
+
+  // ---------- "start from the top" ----------
+  document.getElementById("btnRoot").addEventListener("click", () => {
+    const roots = DATA.filter(p => !p.parent);
+    if (roots[0]) render(roots[0].id);
+  });
 
   function escapeHtml(s){
     return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -3254,25 +3399,6 @@
     });
     last.querySelector(".sp_name").focus();
   });
-
-  // ---------- zoom / pan ----------
-  function applyZoom(){
-    document.getElementById("canvas").style.transform = `scale(${scale})`;
-    document.getElementById("zoomlabel").textContent = Math.round(scale*100) + "%";
-  }
-  document.getElementById("btnZoomIn").onclick = () => { scale = Math.min(2, scale + 0.1); applyZoom(); };
-  document.getElementById("btnZoomOut").onclick = () => { scale = Math.max(0.2, scale - 0.1); applyZoom(); };
-  document.getElementById("btnFit").onclick = () => {
-    const wrap = document.getElementById("canvas-wrap");
-    const canvas = document.getElementById("canvas");
-    const sx = (wrap.clientWidth - 40) / canvas.offsetWidth;
-    // On a phone-width screen, fitting the *entire* tree (10 generation columns)
-    // would shrink text past legibility — floor it higher and let people pan
-    // around instead of squinting at a tiny overview.
-    const floor = window.innerWidth < 720 ? 0.45 : 0.15;
-    scale = Math.max(floor, Math.min(1, sx));
-    applyZoom();
-  };
 
   // ---------- editor ----------
   function populateParentSelect(excludeId){
@@ -3352,7 +3478,7 @@
       p.lastEditedAt = new Date().toISOString();
       persist();
       logChange("added a photo for", p.name);
-      render();
+      render(currentId);
       updateEditorAvatarPreview(p);
       setPhotoStatus("Photo updated.", false);
       if (oldPath && window.__wftDeletePhoto) window.__wftDeletePhoto(oldPath);
@@ -3373,7 +3499,7 @@
     p.lastEditedAt = new Date().toISOString();
     persist();
     logChange("removed the photo for", p.name);
-    render();
+    render(currentId);
     updateEditorAvatarPreview(p);
     setPhotoStatus("Photo removed.", false);
     if (oldPath && window.__wftDeletePhoto) window.__wftDeletePhoto(oldPath);
@@ -3425,7 +3551,7 @@
     }
     persist();
     logChange(wasNew ? "added" : "edited", rec.name);
-    render();
+    render(rec.id);
     closeEditor();
   };
 
@@ -3438,30 +3564,18 @@
       const rec = byId(editingId);
       children.forEach(c => c.parent = rec.parent || null);
     }
-    const deletedName = (byId(editingId) || {}).name || "someone";
+    const deletedRec = byId(editingId) || {};
+    const deletedName = deletedRec.name || "someone";
+    // land the view somewhere that still exists once this person is gone
+    const fallbackId = deletedRec.parent && byId(deletedRec.parent) ? deletedRec.parent : null;
     DATA = DATA.filter(p => p.id !== editingId);
     persist();
     logChange("deleted", deletedName);
-    render();
+    render(fallbackId);
     closeEditor();
   };
 
   document.getElementById("btnAdd").onclick = () => openEditor(null);
-
-  // ---------- search ----------
-  document.getElementById("search").addEventListener("input", (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll(".node").forEach(n => n.classList.remove("highlight"));
-    if (!q) return;
-    const match = DATA.find(p => p.name.toLowerCase().includes(q));
-    if (match) {
-      const el = document.querySelector(`.node[data-id="${match.id}"]`);
-      if (el) {
-        el.classList.add("highlight");
-        el.scrollIntoView({behavior:"smooth", block:"center", inline:"center"});
-      }
-    }
-  });
 
   // ---------- import / export ----------
   document.getElementById("btnExportJSON").onclick = () => {
@@ -3484,6 +3598,8 @@
         if (!Array.isArray(imported)) throw new Error("not an array");
         DATA = migrateSpouses(imported);
         persist();
+        // no id passed -> render() lands on the root, since the old focus
+        // person may not even exist in the freshly imported data
         render();
         alert("Imported " + DATA.length + " people.");
       } catch(err) {
@@ -3517,7 +3633,6 @@
   };
   document.addEventListener("fullscreenchange", () => {
     document.getElementById("btnFullscreen").textContent = document.fullscreenElement ? "⤢" : "⛶";
-    setTimeout(() => document.getElementById("btnFit").click(), 60);
   });
 
   // ---------- theme ----------
@@ -3558,7 +3673,9 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
     document.getElementById("family-data-store").textContent = JSON.stringify(DATA, null, 1);
     localStorage.setItem(BASELINE_KEY, document.getElementById("family-data-store").textContent);
-    render();
+    // stay put if the person we're looking at still exists after this remote
+    // change; render(...) itself falls back to the root if they don't
+    render(currentId);
   };
   // Same idea, one level down: the activity log syncs on its own path so
   // everyone's "who changed what" feed matches, same as the tree data does.
@@ -3577,8 +3694,6 @@
   CHANGELOG = loadChangelog();
   render();
   renderActivityLog();
-  window.addEventListener("resize", () => {});
-  setTimeout(() => document.getElementById("btnFit").click(), 50);
 })();
 </script>
 
