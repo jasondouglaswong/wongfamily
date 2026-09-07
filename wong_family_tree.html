@@ -172,7 +172,9 @@
   #spouseCards{display:flex;flex-direction:column;gap:8px;padding-top:20px;max-width:200px;}
   .spouse-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:9px;padding:8px 13px;
     font-size:12px;color:var(--ink);display:flex;align-items:center;gap:9px;font-weight:500;}
-  .spouse-card[data-spouse-photo] .avatar{cursor:pointer;transition:transform .12s;}
+  .spouse-card{cursor:pointer;transition:background .15s;}
+  .spouse-card:hover{background:var(--accent-soft);filter:brightness(1.03);}
+  .spouse-card[data-spouse-photo] .avatar{transition:transform .12s;}
   .spouse-card[data-spouse-photo] .avatar:hover{transform:scale(1.08);}
   .spouse-note{font-weight:400;color:var(--sub);font-size:11px;margin-top:2px;line-height:1.4;}
 
@@ -325,11 +327,9 @@
   .spouseRow .spouseRowTop{display:flex;gap:8px;align-items:center;}
   .spouseRow .spouseRowTop input{flex:1;}
   .spouseRow textarea{min-height:52px;margin-top:8px;}
-  .spAvatarWrap{flex:none;position:relative;width:30px;height:30px;}
+  .spAvatarWrap{flex:none;position:relative;width:30px;height:34px;}
   .spAvatarWrap .avatar{cursor:default;}
-  .spPhotoBtns{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);display:flex;gap:3px;
-    opacity:0;transition:opacity .15s;}
-  .spouseRow:hover .spPhotoBtns, .spAvatarWrap:focus-within .spPhotoBtns{opacity:1;}
+  .spPhotoBtns{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);display:flex;gap:3px;}
   .sp_photo_upload, .sp_photo_remove{flex:none;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid var(--border);
     background:var(--panel);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;
     font-size:9px;line-height:1;box-shadow:var(--shadow);transition:color .15s,border-color .15s;}
@@ -3375,7 +3375,7 @@
     html += `</div>`;
 
     if (spouses.length){
-      html += `<div id="spouseCards">` + spouses.map(s => `<div class="spouse-card"${s.photoUrl?' data-spouse-photo="1"':''} data-spouse-name="${escapeHtml(s.name)}" data-spouse-photo-url="${s.photoUrl?escapeHtml(s.photoUrl):''}">${avatarHtml({name:s.name, photoUrl:s.photoUrl},"avatar-sm")}<div><span>${escapeHtml(s.name)}</span>${s.note?`<div class="spouse-note">${escapeHtml(s.note)}</div>`:""}</div></div>`).join("") + `</div>`;
+      html += `<div id="spouseCards">` + spouses.map(s => `<div class="spouse-card"${s.photoUrl?' data-spouse-photo="1"':''} data-spouse-id="${s.id||''}" data-spouse-name="${escapeHtml(s.name)}" data-spouse-photo-url="${s.photoUrl?escapeHtml(s.photoUrl):''}">${avatarHtml({name:s.name, photoUrl:s.photoUrl},"avatar-sm")}<div><span>${escapeHtml(s.name)}</span>${s.note?`<div class="spouse-note">${escapeHtml(s.note)}</div>`:""}</div></div>`).join("") + `</div>`;
     } else { html += `<div style="width:1px"></div>`; }
     html += `</div>`; // #focusRow
 
@@ -3419,12 +3419,28 @@
     if (addPhotoBtn) addPhotoBtn.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
     const editBadge = stage.querySelector(".editBadge");
     if (editBadge) editBadge.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
-    // a spouse with a real uploaded photo gets the same tap-to-enlarge cameo
-    // as the main person -- no point uploading a photo nobody can see bigger
-    stage.querySelectorAll('.spouse-card[data-spouse-photo]').forEach(card => {
+    // tapping a spouse card either shows their photo bigger (same cameo the
+    // main person gets) or, if they don't have one yet, jumps straight to
+    // the editor's Spouse(s) section -- that's the only place a spouse photo
+    // can be added, so tapping the card is never a dead end
+    stage.querySelectorAll('.spouse-card').forEach(card => {
       card.addEventListener("click", (e) => {
         e.stopPropagation();
-        toggleBigPortrait({ name: card.dataset.spouseName, photoUrl: card.dataset.spousePhotoUrl });
+        if (card.hasAttribute("data-spouse-photo")) {
+          toggleBigPortrait({ name: card.dataset.spouseName, photoUrl: card.dataset.spousePhotoUrl });
+          return;
+        }
+        openEditor(p.id);
+        const spouseId = card.dataset.spouseId;
+        if (!spouseId) return;
+        requestAnimationFrame(() => {
+          const row = document.querySelector(`#spouseList .spouseRow[data-id="${spouseId}"]`);
+          if (!row) return;
+          row.scrollIntoView({ block: "center" });
+          row.style.transition = "background .3s";
+          row.style.background = "var(--accent-soft)";
+          setTimeout(() => { row.style.background = ""; }, 900);
+        });
       });
     });
 
