@@ -1,0 +1,3670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Wong Family</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --canvas-dot:#e3e8f3; --panel:#ffffff; --ink:#0f172a; --sub:#64748b; --sub2:#94a3b8;
+    --line-clear:#94a3b8; --line-pos:#d97706; --accent:#4f46e5; --accent-ink:#ffffff; --accent-soft:#eef0ff;
+    --accent2:#0d9488; --border:#e2e8f0; --uncertain:#e11d48; --uncertain-soft:#fff1f2;
+    --shadow:0 1px 2px rgba(15,23,42,.06), 0 1px 1px rgba(15,23,42,.04);
+    --shadow-lg:0 12px 32px rgba(15,23,42,.16), 0 2px 8px rgba(15,23,42,.08);
+    --radius:12px;
+    color-scheme:light;
+  }
+  [data-theme="dark"]{
+    --bg:#0b1220; --canvas-dot:#182338; --panel:#131b2e; --ink:#e7ebf3; --sub:#9aa6bb; --sub2:#6f7c94;
+    --line-clear:#5b677e; --line-pos:#e0a64b; --accent:#818cf8; --accent-ink:#0b1024; --accent-soft:#1c2140;
+    --accent2:#2dd4bf; --border:#232e47; --uncertain:#fb7185; --uncertain-soft:#2a1620;
+    --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 40px rgba(0,0,0,.55);
+    color-scheme:dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1220; --canvas-dot:#182338; --panel:#131b2e; --ink:#e7ebf3; --sub:#9aa6bb; --sub2:#6f7c94;
+      --line-clear:#5b677e; --line-pos:#e0a64b; --accent:#818cf8; --accent-ink:#0b1024; --accent-soft:#1c2140;
+      --accent2:#2dd4bf; --border:#232e47; --uncertain:#fb7185; --uncertain-soft:#2a1620;
+      --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 16px 40px rgba(0,0,0,.55);
+      color-scheme:dark;
+    }
+  }
+  *{box-sizing:border-box;}
+  html{margin:0;padding:0;}
+  body{margin:0;padding:0;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+
+  /* Everything the tree needs lives inside this one box, positioned in the
+     normal page flow — so dropping this file into an existing site (or an
+     "embed HTML" block) never covers that site's own header/nav, and the
+     page around it scrolls normally. Fixed/absolute elements below are all
+     scoped to this box, never to the browser viewport. */
+  #app{
+    position:relative; isolation:isolate; width:100%;
+    height:min(85vh, 900px); min-height:520px;
+    overflow:hidden; background:var(--bg);
+    border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow-lg);
+  }
+  #app:fullscreen{ height:100vh; border-radius:0; }
+
+  #toolbar{
+    position:absolute;top:0;left:0;right:0;height:60px;background:color-mix(in srgb, var(--panel) 88%, transparent);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);border-radius:16px 16px 0 0;
+    display:flex;align-items:center;gap:10px;padding:0 16px;z-index:50;flex-wrap:wrap;
+  }
+  #toolbar h1{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0 6px 0 0;color:var(--ink);white-space:nowrap;display:flex;align-items:center;gap:8px;}
+  #toolbar h1 .logo-dot{width:22px;height:22px;display:inline-flex;color:var(--accent);flex:none;}
+  #toolbar h1 .logo-dot svg{width:100%;height:100%;}
+  .divider{width:1px;align-self:stretch;margin:12px 2px;background:var(--border);}
+
+  #toolbar button, #toolbar input[type=text]{
+    font-family:inherit;font-size:13px;padding:7px 12px;border:1px solid var(--border);border-radius:9px;
+    background:var(--panel);cursor:pointer;color:var(--ink);transition:background .15s,border-color .15s,transform .1s;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  #toolbar button:hover{background:var(--accent-soft);border-color:var(--accent);}
+  #toolbar button:active{transform:scale(.97);}
+  #toolbar button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;}
+  #toolbar button.primary:hover{filter:brightness(1.08);}
+  #toolbar button.icon-btn{padding:7px 9px;}
+  #search{width:190px;cursor:text;}
+  #search:focus, #toolbar select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  #zoomlabel{font-size:12px;color:var(--sub);min-width:38px;text-align:center;font-variant-numeric:tabular-nums;}
+  .spacer{flex:1;}
+  #legend{font-size:11.5px;color:var(--sub);display:flex;gap:14px;align-items:center;white-space:nowrap;}
+  #legend span{display:inline-flex;align-items:center;gap:5px;}
+  #legend .swatch{width:16px;height:2px;display:inline-block;border-radius:2px;}
+  #legend .dot{width:8px;height:8px;border-radius:50%;background:var(--uncertain);display:inline-block;}
+
+  #canvas-wrap{position:absolute;top:60px;left:0;right:0;bottom:130px;overflow:auto;color:var(--ink);
+      background:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22260%22%3E%3Ctext%20x%3D%2240%22%20y%3D%22190%22%20font-size%3D%22160%22%20font-family%3D%22Georgia%2C%20%27Songti%20SC%27%2C%20serif%22%20fill%3D%22%230f172a%22%20opacity%3D%220.05%22%3E%E9%BB%84%3C/text%3E%3C/svg%3E") 0 0/260px 260px,
+      radial-gradient(circle at 18px 18px, var(--canvas-dot) 1.4px, transparent 1.4px) 0 0/26px 26px, var(--bg);}
+  /* Dark mode needs its own pass with a light-colored glyph baked in — a data-URI
+     background image doesn't inherit the page's `color`, so `currentColor` inside
+     one silently renders black regardless of theme (invisible on a dark ground). */
+  [data-theme="dark"] #canvas-wrap{
+      background:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22260%22%3E%3Ctext%20x%3D%2240%22%20y%3D%22190%22%20font-size%3D%22160%22%20font-family%3D%22Georgia%2C%20%27Songti%20SC%27%2C%20serif%22%20fill%3D%22%23e7ebf3%22%20opacity%3D%220.06%22%3E%E9%BB%84%3C/text%3E%3C/svg%3E") 0 0/260px 260px,
+      radial-gradient(circle at 18px 18px, var(--canvas-dot) 1.4px, transparent 1.4px) 0 0/26px 26px, var(--bg);}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) #canvas-wrap{
+      background:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22260%22%20height%3D%22260%22%3E%3Ctext%20x%3D%2240%22%20y%3D%22190%22%20font-size%3D%22160%22%20font-family%3D%22Georgia%2C%20%27Songti%20SC%27%2C%20serif%22%20fill%3D%22%23e7ebf3%22%20opacity%3D%220.06%22%3E%E9%BB%84%3C/text%3E%3C/svg%3E") 0 0/260px 260px,
+      radial-gradient(circle at 18px 18px, var(--canvas-dot) 1.4px, transparent 1.4px) 0 0/26px 26px, var(--bg);}
+  }
+
+  /* Activity log -- a permanent strip below the chart (not another layer on
+     top of it), so it never competes with the tree itself for space. */
+  #activityBar{
+    position:absolute;left:0;right:0;bottom:0;height:130px;background:var(--panel);
+    border-top:1px solid var(--border);border-radius:0 0 16px 16px;display:flex;flex-direction:column;z-index:40;
+  }
+  #activityBar h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:0;padding:9px 16px 6px;flex:none;}
+  #activityBar .body{overflow-y:auto;flex:1;padding:0 16px 8px;}
+  #activityBar .empty{color:var(--sub2);font-size:12.5px;padding:6px 0;}
+  .log-entry{padding:5px 0;font-size:12.5px;display:flex;gap:8px;align-items:baseline;border-bottom:1px dashed var(--border);}
+  .log-entry:last-child{border-bottom:none;}
+  .log-entry .who{font-weight:700;color:var(--ink);white-space:nowrap;}
+  .log-entry .what{color:var(--ink);flex:1;}
+  .log-entry .what .person{font-weight:600;color:var(--accent2);}
+  .log-entry .when{color:var(--sub2);font-size:11px;white-space:nowrap;}
+
+  @media (max-width: 720px){
+    #activityBar{height:96px;}
+    #activityBar .body{padding:0 12px 6px;}
+  }
+
+  #canvas{position:relative;transform-origin:0 0;}
+  svg#lines{position:absolute;top:0;left:0;pointer-events:none;}
+
+  .node{
+    position:absolute;background:var(--panel);border:1px solid var(--border);border-top-width:3px;border-radius:var(--radius);
+    padding:9px 13px 10px;font-size:13px;line-height:1.45;cursor:pointer;box-shadow:var(--shadow);
+    min-width:168px; max-width:246px;transition:box-shadow .15s,border-color .15s,transform .15s;
+  }
+  .node:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);z-index:4;}
+  .node-row{display:flex;align-items:center;gap:9px;}
+  .node-row .txt{min-width:0;flex:1;}
+  .node .name{font-weight:700;color:var(--ink);letter-spacing:-.01em;font-size:13.5px;}
+  .node .dates{color:var(--sub);font-size:11.5px;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+  .node .spouse{color:var(--accent2);font-size:11.5px;margin-top:3px;font-weight:600;}
+  .node .spouse::before{content:"⚭ ";}
+  .node .note-flag{
+    position:absolute; bottom:5px; right:7px; width:14px;height:14px;border-radius:50%;
+    background:var(--accent-soft); color:var(--accent2); opacity:.85;
+    display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1;
+  }
+
+  /* photo avatars — colored initials by default (exactly one gold, one red — the
+     Wong-family palette, not a coded system); a real uploaded photo drops into the
+     same slot automatically once someone adds one */
+  .avatar{flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:inherit;font-weight:700;letter-spacing:.01em;background-size:cover;background-position:center;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
+  .avatar-sm{width:30px;height:30px;font-size:11.5px;}
+  .avatar-lg{width:78px;height:78px;font-size:23px;margin:0 auto 10px;position:relative;}
+  .node.uncertain{border-color:var(--uncertain);}
+  .node.uncertain::after{
+    content:"?"; position:absolute; top:-7px; right:-7px; background:var(--uncertain); color:#fff;
+    width:16px;height:16px;border-radius:50%;font-size:10.5px;line-height:16px;text-align:center;font-weight:700;
+    box-shadow:0 0 0 2px var(--panel);
+  }
+  .node.root{border-width:2px;box-shadow:0 0 0 4px var(--accent-soft), var(--shadow-lg);}
+  .node.root::before{
+    content:"🌳"; position:absolute; top:-11px; left:-11px; width:22px;height:22px;border-radius:50%;
+    background:var(--panel); border:1px solid var(--border); display:flex;align-items:center;justify-content:center;
+    font-size:12px; box-shadow:var(--shadow);
+  }
+  .gen-label{
+    position:absolute; top:16px; font-size:11.5px; font-weight:700; letter-spacing:.03em;
+    color:#fff; padding:5px 13px 5px 11px; border-radius:999px; white-space:nowrap;
+    box-shadow:var(--shadow); text-transform:uppercase; display:flex; align-items:center; gap:5px;
+  }
+  .gen-label::before{content:"";width:7px;height:7px;border-radius:2px;background:rgba(255,255,255,.85);
+    transform:rotate(45deg);flex:none;}
+  .node.highlight{outline:3px solid #facc15; outline-offset:1px; z-index:5;}
+
+  /* Editor drawer — absolute within #app, so it never covers anything
+     outside this widget's own box (the host page's nav included). */
+  #overlay{position:absolute;inset:0;background:rgba(15,23,42,.4);backdrop-filter:blur(2px);display:none;z-index:100;border-radius:16px;}
+  #editor{
+    position:absolute;top:0;right:0;bottom:0;width:380px;max-width:90%;background:var(--panel);z-index:101;
+    box-shadow:var(--shadow-lg);display:none;flex-direction:column;
+    border-left:1px solid var(--border);border-radius:0 16px 16px 0;
+  }
+  #editor h2{font-size:16px;font-weight:700;margin:0;padding:18px 20px;border-bottom:1px solid var(--border);color:var(--ink);}
+  #editor .body{padding:18px 20px;overflow-y:auto;flex:1;}
+  #editor label{display:block;font-size:11px;color:var(--sub);margin:14px 0 5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  #editor input[type=text], #editor input[type=number], #editor textarea, #editor select{
+    width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:9px;font-family:inherit;font-size:13.5px;
+    background:var(--bg);color:var(--ink);transition:border-color .15s, box-shadow .15s;
+  }
+  #editor input:focus, #editor textarea:focus, #editor select:focus{
+    outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--panel);
+  }
+  #editor textarea{min-height:74px;resize:vertical;}
+  #editor .row{display:flex;gap:10px;}
+  #editor .row > div{flex:1;}
+  #editor .checkbox-row{display:flex;align-items:center;gap:8px;margin-top:14px;}
+  #editor .checkbox-row input{width:auto;}
+  #editor .footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:8px;}
+  #editor .footer button{flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--ink);cursor:pointer;font-size:13.5px;font-weight:600;transition:background .15s,transform .1s;}
+  #editor .footer button:hover{background:var(--accent-soft);}
+  #editor .footer button:active{transform:scale(.97);}
+  #editor .footer button.save{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  #editor .footer button.save:hover{filter:brightness(1.08);}
+  #editor .footer button.delete{color:var(--uncertain);border-color:var(--border);}
+  #editor .footer button.delete:hover{background:var(--uncertain-soft);border-color:var(--uncertain);}
+  #hint{font-size:11px;color:var(--sub2);margin-top:4px;line-height:1.4;}
+  #fileimport{display:none;}
+
+  #spouseList{display:flex;flex-direction:column;gap:10px;}
+  .spouseRow{border:1px solid var(--border);border-radius:10px;padding:10px 10px 11px;background:var(--bg);}
+  .spouseRow .spouseRowTop{display:flex;gap:8px;align-items:center;}
+  .spouseRow .spouseRowTop input{flex:1;}
+  .spouseRow textarea{min-height:52px;margin-top:8px;}
+  .sp_remove{flex:none;width:30px;height:30px;padding:0;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel);color:var(--sub);cursor:pointer;font-size:14px;line-height:1;transition:background .15s,border-color .15s,color .15s;}
+  .sp_remove:hover{background:var(--uncertain-soft);border-color:var(--uncertain);color:var(--uncertain);}
+  #btnAddSpouse{margin-top:10px;width:100%;padding:9px;border-radius:9px;border:1px dashed var(--border);
+    background:transparent;color:var(--sub);cursor:pointer;font-size:12.5px;font-weight:600;transition:border-color .15s,color .15s,background .15s;}
+  #btnAddSpouse:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+
+  ::-webkit-scrollbar{width:11px;height:11px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;border:3px solid var(--bg);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--sub2);}
+
+  /* ---------- phone / narrow-screen layout ----------
+     Collapse the toolbar to icon-only buttons and drop the legend so it
+     takes 2 compact rows instead of 6, and give the tree itself most of
+     the widget's height back. */
+  @media (max-width: 720px){
+    #toolbar{padding:8px 10px;gap:6px;}
+    #toolbar h1{font-size:14px;margin-right:2px;}
+    #toolbar h1 .logo-dot{width:19px;height:19px;}
+    #search{width:auto;flex:1 1 130px;font-size:12.5px;padding:7px 10px;}
+    #toolbar button{padding:7px 9px;font-size:12.5px;}
+    .lbl{display:none;}
+    #legend{display:none;}
+    .divider{margin:8px 1px;}
+    #app{height:min(88vh, 900px);border-radius:10px;}
+    #toolbar{border-radius:10px 10px 0 0;}
+    #canvas-wrap{border-radius:0 0 10px 10px;}
+  }
+  @media (max-width: 720px) and (hover: none){
+    /* touch devices: slightly larger tap targets on cards */
+    .node{padding:10px 13px 11px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+<div id="toolbar">
+  <h1><span class="logo-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v6"/><path d="M12 9c-3.5 0-5.5 2-5.5 4.5S8.5 17 12 17s5.5-1.5 5.5-4.5S15.5 9 12 9z"/>
+      <path d="M12 17v4"/><circle cx="7" cy="20" r="1.6" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="21" r="1.6" fill="currentColor" stroke="none"/><circle cx="17" cy="20" r="1.6" fill="currentColor" stroke="none"/>
+      <path d="M7 20v-3M17 20v-3"/></svg></span>The Wong Family</h1>
+  <div class="divider"></div>
+  <input type="text" id="search" placeholder="🔍 Search a name…">
+  <button id="btnAdd">＋<span class="lbl"> Add person</span></button>
+  <div class="divider"></div>
+  <button id="btnZoomOut" class="icon-btn" title="Zoom out">−</button>
+  <span id="zoomlabel">100%</span>
+  <button id="btnZoomIn" class="icon-btn" title="Zoom in">+</button>
+  <button id="btnFit" title="Fit whole tree to screen">▣<span class="lbl"> Fit to screen</span></button>
+  <button id="btnFullscreen" class="icon-btn" title="Expand to fullscreen">⛶</button>
+  <div class="spacer"></div>
+  <div id="legend">
+    <span><span class="swatch" style="background:var(--line-clear)"></span>clear bracket</span>
+    <span><span class="swatch" style="background:var(--line-pos);border-top:2px dashed var(--line-pos)"></span>positional guess</span>
+    <span><span class="dot"></span>flagged uncertain</span>
+  </div>
+  <div class="spacer"></div>
+  <button id="btnTheme" class="icon-btn" title="Toggle light/dark">🌙</button>
+  <div class="divider"></div>
+  <button id="btnExportJSON" title="Download the raw data as JSON">{ }<span class="lbl"> Data (.json)</span></button>
+  <button id="btnImportJSON" title="Load a previously exported JSON file">⇧<span class="lbl"> Import</span></button>
+  <button id="btnExportHTML" class="primary" title="Download this whole page with your edits baked in">⇩<span class="lbl"> Updated page (.html)</span></button>
+  <input type="file" id="fileimport" accept=".json">
+</div>
+
+<div id="canvas-wrap">
+  <div id="canvas">
+    <svg id="lines"></svg>
+  </div>
+</div>
+
+<div id="activityBar">
+  <h2>Recent activity</h2>
+  <div class="body" id="activityList"></div>
+</div>
+
+<div id="overlay"></div>
+<div id="editor">
+  <h2 id="editorTitle">Edit person</h2>
+  <div id="editorMeta" style="display:none;padding:8px 20px 0;font-size:11px;color:var(--sub2)"></div>
+  <div class="body">
+    <div id="photoSection" style="text-align:center;margin-bottom:6px;display:none;">
+      <div id="editorAvatarWrap"></div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;">
+        <button type="button" id="btnUploadPhoto" style="padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--ink);cursor:pointer;font-size:12.5px;font-weight:600;">Upload photo</button>
+        <button type="button" id="btnRemovePhoto" style="display:none;padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--uncertain);cursor:pointer;font-size:12.5px;font-weight:600;">Remove photo</button>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none;">
+      <div id="photoStatus" style="font-size:11.5px;color:var(--sub2);margin-top:6px;min-height:14px;"></div>
+    </div>
+    <div id="photoSectionNew" style="text-align:center;margin-bottom:10px;font-size:12px;color:var(--sub2);display:none;">
+      Save this person first, then come back to add a photo.
+    </div>
+    <label>Name</label>
+    <input type="text" id="f_name">
+
+    <div class="row">
+      <div>
+        <label>Generation #</label>
+        <input type="number" id="f_gen">
+      </div>
+      <div>
+        <label>Dates</label>
+        <input type="text" id="f_dates" placeholder="e.g. 1870-1920">
+      </div>
+    </div>
+
+    <label>Parent</label>
+    <select id="f_parent"></select>
+    <div id="hint">Changing the parent auto-suggests generation = parent's generation + 1.</div>
+
+    <label>Spouse(s)</label>
+    <div id="spouseList"></div>
+    <button type="button" id="btnAddSpouse">+ Add spouse</button>
+    <div id="hint">Each spouse can have their own name and notes.</div>
+
+    <label>Notes</label>
+    <textarea id="f_note"></textarea>
+
+    <label>Link confidence</label>
+    <select id="f_confidence">
+      <option value="clear">Clear — traced from an unambiguous bracket</option>
+      <option value="positional">Positional — inferred from layout/order</option>
+    </select>
+
+    <div class="checkbox-row">
+      <input type="checkbox" id="f_uncertain">
+      <label style="margin:0;text-transform:none;font-size:13px;color:var(--ink)">Flag this whole entry as uncertain (name/spelling in doubt)</label>
+    </div>
+  </div>
+  <div class="footer">
+    <button class="delete" id="btnDelete">Delete</button>
+    <button id="btnCancel">Cancel</button>
+    <button class="save" id="btnSave">Save</button>
+  </div>
+</div>
+</div><!-- /#app -->
+
+<script id="family-data-store" type="application/json">
+[
+ {
+  "id": "p1",
+  "gen": 1,
+  "name": "Sir Juzheng WONG",
+  "dates": "",
+  "note": "1st generation in Guandong Province. His 7th generation grandson moved to Nankeng in Taishan County about 5 miles from Taishan City.",
+  "spouse": "",
+  "parent": null,
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p2",
+  "gen": 25,
+  "name": "Sir Jiada WONG",
+  "dates": "1815-1891",
+  "note": "Traditional farmer. Moved to a village about 10 miles from Nankeng. In 1879 purchased a large portion of the village from another Wong family and named it 'He He Village'. Built 5 houses, one for each of his sons. (24 intervening generations not detailed on this chart.)",
+  "spouse": "Lady LEI (1815-1890)",
+  "parent": "p1",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p3",
+  "gen": 26,
+  "name": "Yeliang",
+  "dates": "1840-1895",
+  "note": "",
+  "spouse": "",
+  "parent": "p2",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p4",
+  "gen": 26,
+  "name": "Yeli",
+  "dates": "1845-1943",
+  "note": "",
+  "spouse": "",
+  "parent": "p2",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p5",
+  "gen": 26,
+  "name": "Yeyi",
+  "dates": "1849-1922",
+  "note": "Also a farmer, while some of his brothers were grocers and lumber workers. Many of Yeyi's descendants obtained their education and planned for professional careers in China until after WWII; the Chinese civil war and Mao Zedong's rise instead sent descendants to the US to pursue higher education/professional careers (engineering, journalism, nursing, education, law, accounting, hotel management, etc). No children listed on this chart.",
+  "spouse": "#1 wife LI (1847-1899); #2 wife LEI (1871-19??)",
+  "parent": "p2",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p6",
+  "gen": 26,
+  "name": "Yekang",
+  "dates": "1853-1899",
+  "note": "A line trails off the edge of the photo here \u2014 further descendants not captured.",
+  "spouse": "",
+  "parent": "p2",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p7",
+  "gen": 26,
+  "name": "Yefu",
+  "dates": "1856-1874",
+  "note": "",
+  "spouse": "",
+  "parent": "p2",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p8",
+  "gen": 27,
+  "name": "Wenquen",
+  "dates": "1870-1920",
+  "note": "Farmer",
+  "spouse": "",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p9",
+  "gen": 27,
+  "name": "Wenxi",
+  "dates": "1876-1946",
+  "note": "Inherited money from an uncle. Was a merchant in Canada. Returned to He He Village when he retired.",
+  "spouse": "",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p10",
+  "gen": 27,
+  "name": "Wenqing",
+  "dates": "1879-1918",
+  "note": "Came to Brooklyn using counterfeit documents under the name 'Wenqing LEE'. Worked in a laundry. Returned to He He Village 20 years later due to illness; died less than 2 years later.",
+  "spouse": "Fenghao NG (1879-1968) \u2014 immigrated to the US in 1967, died 1 year later",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p11",
+  "gen": 27,
+  "name": "Wenjing",
+  "dates": "1881-1906",
+  "note": "d. in China",
+  "spouse": "",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p12",
+  "gen": 27,
+  "name": "Wenzhan",
+  "dates": "1899-bef.1920",
+  "note": "Immigrated to US. Injured playing high school football, died shortly after. Buried near Philadelphia.",
+  "spouse": "",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p13",
+  "gen": 27,
+  "name": "Wenhui",
+  "dates": "1902-?",
+  "note": "Immigrated to Harlem, Manhattan, NY. Worked as a laundryman.",
+  "spouse": "",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p14",
+  "gen": 27,
+  "name": "Wenlian (\"Uncle Charlie\")",
+  "dates": "1909-1996",
+  "note": "At age 12 came to Canada, then to US a year later. Served in US Army in WWII (Germany). Co-owned Eastern Star Cafe. Family called him \"Fun Suk\" = Uncle Charlie (Taishan dialect).",
+  "spouse": "",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p15",
+  "gen": 27,
+  "name": "Wenrue",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p3",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p16",
+  "gen": 28,
+  "name": "Huaxon",
+  "dates": "",
+  "note": "Intelligent. Eventually came to US and worked in Eastern Star Cafe.",
+  "spouse": "",
+  "parent": "p15",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p17",
+  "gen": 29,
+  "name": "Qizhuo",
+  "dates": "d.1943",
+  "note": "Lives in Hong Kong",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p18",
+  "gen": 29,
+  "name": "Qigao",
+  "dates": "",
+  "note": "Farmer. Moved to Canada in 1980's",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p19",
+  "gen": 29,
+  "name": "(daughter, name not given)",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p20",
+  "gen": 29,
+  "name": "Huaxi",
+  "dates": "d.1985",
+  "note": "Brought his kids to US. Worked in Chinese restaurants.",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p21",
+  "gen": 29,
+  "name": "Huazhao (Wah Joe)",
+  "dates": "",
+  "note": "Stayed in China, became Chief Engineer of Guangzhou Railroad Adm. After retirement immigrated to US \u2014 lives in Boston.",
+  "spouse": "LIU",
+  "parent": "p16",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p22",
+  "gen": 29,
+  "name": "John Given",
+  "dates": "1899-1980",
+  "note": "Immigrated to US. Co-owned Eastern Star Cafe.",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p23",
+  "gen": 29,
+  "name": "Huaheu Huaxu",
+  "dates": "1901-1964",
+  "note": "Was a teacher, then apprentice in a Chinese Medicine Store, became 'top acquisition specialist'. Founder and director of the Hong Kong Chinese Medical Merchants Assoc. Buried George Washington Cemetery, Washington DC.",
+  "spouse": "NG Poyuk (Boyok) (1902-1988)",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p24",
+  "gen": 29,
+  "name": "Gene Guen",
+  "dates": "",
+  "note": "Immigrated to US. Co-owned Eastern Star Cafe.",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p25",
+  "gen": 29,
+  "name": "Wai Ping (\"Shorty\")",
+  "dates": "1910-1995",
+  "note": "d. Santa Clara, CA. 1946 statement to nephew Hsin Ping (Sam): \"Yookman, you must follow my footsteps [to US]. I will go first to pave the way and you come next.\"",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p26",
+  "gen": 29,
+  "name": "Huayan",
+  "dates": "d.195?",
+  "note": "Immigrated to US but later retired back in He He Village, Taishan.",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p27",
+  "gen": 29,
+  "name": "Shurong Ng",
+  "dates": "",
+  "note": "Immigrated to US in 1980's.",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p28",
+  "gen": 29,
+  "name": "Shee-Park (Jimmy)",
+  "dates": "d.2005",
+  "note": "Owned restaurants in NYC.",
+  "spouse": "Wai-Lan Lim",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p29",
+  "gen": 29,
+  "name": "Susie",
+  "dates": "imm. 1947",
+  "note": "",
+  "spouse": "Gan Yee",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p30",
+  "gen": 29,
+  "name": "Betty",
+  "dates": "",
+  "note": "In US",
+  "spouse": "Jay Jans",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p31",
+  "gen": 29,
+  "name": "Benjamin (\"Benny\")",
+  "dates": "",
+  "note": "Benny was ring bearer in Sam & Ruth's wedding.",
+  "spouse": "Lisa",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p32",
+  "gen": 29,
+  "name": "Huaqing",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p16",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p33",
+  "gen": 30,
+  "name": "Helen",
+  "dates": "",
+  "note": "",
+  "spouse": "Ken NG",
+  "parent": "p17",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p34",
+  "gen": 30,
+  "name": "Judy",
+  "dates": "",
+  "note": "",
+  "spouse": "Tam Kit YUEN",
+  "parent": "p17",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p35",
+  "gen": 30,
+  "name": "Donna",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p17",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p36",
+  "gen": 30,
+  "name": "Michael",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p18",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p37",
+  "gen": 30,
+  "name": "Stephanie",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p18",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p38",
+  "gen": 30,
+  "name": "Sau Dick",
+  "dates": "",
+  "note": "",
+  "spouse": "Pui-Fong Ho",
+  "parent": "p19",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p39",
+  "gen": 30,
+  "name": "Joe",
+  "dates": "",
+  "note": "Worked NYPD. Lives NYC.",
+  "spouse": "Chi-Ling",
+  "parent": "p20",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p40",
+  "gen": 30,
+  "name": "William",
+  "dates": "",
+  "note": "Lives in Cincinnati, OH",
+  "spouse": "Terri",
+  "parent": "p20",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p41",
+  "gen": 30,
+  "name": "Shiao-Ling",
+  "dates": "d.1942",
+  "note": "",
+  "spouse": "Jin-Tim Yee",
+  "parent": "p20",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p42",
+  "gen": 30,
+  "name": "Shirley",
+  "dates": "",
+  "note": "",
+  "spouse": "Yick Won Yee",
+  "parent": "p20",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p43",
+  "gen": 30,
+  "name": "May-Jean",
+  "dates": "",
+  "note": "",
+  "spouse": "Koon",
+  "parent": "p20",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p44",
+  "gen": 30,
+  "name": "Zuyi",
+  "dates": "",
+  "note": "",
+  "spouse": "WU",
+  "parent": "p21",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p45",
+  "gen": 30,
+  "name": "Zuzheng",
+  "dates": "",
+  "note": "",
+  "spouse": "LI",
+  "parent": "p21",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p46",
+  "gen": 30,
+  "name": "Xian Juan",
+  "dates": "",
+  "note": "",
+  "spouse": "LI",
+  "parent": "p21",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p47",
+  "gen": 30,
+  "name": "Xian Shan",
+  "dates": "",
+  "note": "",
+  "spouse": "YU",
+  "parent": "p21",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p48",
+  "gen": 30,
+  "name": "Sherman",
+  "dates": "",
+  "note": "",
+  "spouse": "Eva",
+  "parent": "p22",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p49",
+  "gen": 30,
+  "name": "Sue",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p22",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p50",
+  "gen": 30,
+  "name": "Hsin Ping (Sam)",
+  "dates": "",
+  "note": "",
+  "spouse": "Cheng Shih San Zhou (Ruth)",
+  "parent": "p23",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p51",
+  "gen": 30,
+  "name": "Yook Kearn (York)",
+  "dates": "",
+  "note": "",
+  "spouse": "Lo Lan Fong (Daisy)",
+  "parent": "p23",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p52",
+  "gen": 30,
+  "name": "Gan Min",
+  "dates": "",
+  "note": "",
+  "spouse": "Yun Gee",
+  "parent": "p24",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p53",
+  "name": "Susan",
+  "gen": 30,
+  "dates": "1950-",
+  "parent": "p24",
+  "spouse": "Wallace Lee",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p54",
+  "name": "Sophia",
+  "gen": 30,
+  "dates": "1951-",
+  "parent": "p24",
+  "spouse": "Wylie Wong",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p55",
+  "gen": 30,
+  "name": "Betty",
+  "dates": "",
+  "note": "Lives in CA",
+  "spouse": "",
+  "parent": "p25",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p56",
+  "gen": 30,
+  "name": "Lechee",
+  "dates": "",
+  "note": "",
+  "spouse": "Youland",
+  "parent": "p25",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p57",
+  "gen": 30,
+  "name": "Rose",
+  "dates": "",
+  "note": "",
+  "spouse": "Michael Kutsenda",
+  "parent": "p25",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p58",
+  "gen": 30,
+  "name": "Zhaoliang",
+  "dates": "",
+  "note": "Became Chief of Police in Canton County. Escaped to Hong Kong.",
+  "spouse": "",
+  "parent": "p26",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p59",
+  "gen": 30,
+  "name": "James",
+  "dates": "",
+  "note": "",
+  "spouse": "Anna",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p60",
+  "gen": 30,
+  "name": "Xiao Tong",
+  "dates": "",
+  "note": "",
+  "spouse": "Liao",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p61",
+  "gen": 30,
+  "name": "Xiao Yisn",
+  "dates": "",
+  "note": "",
+  "spouse": "Wu",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p62",
+  "gen": 30,
+  "name": "Tak Ming",
+  "dates": "",
+  "note": "",
+  "spouse": "Leung",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p63",
+  "gen": 30,
+  "name": "Yun Ming",
+  "dates": "",
+  "note": "",
+  "spouse": "Liu",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p64",
+  "gen": 30,
+  "name": "Kit Ming",
+  "dates": "",
+  "note": "",
+  "spouse": "Tam",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p65",
+  "gen": 30,
+  "name": "Po Yuk",
+  "dates": "",
+  "note": "",
+  "spouse": "Lai",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p66",
+  "gen": 30,
+  "name": "Po Ting",
+  "dates": "",
+  "note": "",
+  "spouse": "Eng",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p67",
+  "gen": 30,
+  "name": "Po Shan",
+  "dates": "",
+  "note": "",
+  "spouse": "Chang",
+  "parent": "p27",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p68",
+  "name": "James",
+  "gen": 30,
+  "dates": "",
+  "parent": "p28",
+  "spouse": "Jeanne",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p69",
+  "gen": 30,
+  "name": "William",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p28",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p70",
+  "gen": 30,
+  "name": "Anna",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p28",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p71",
+  "gen": 30,
+  "name": "Barbara",
+  "dates": "",
+  "note": "",
+  "spouse": "D. Hepron",
+  "parent": "p28",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p72",
+  "gen": 30,
+  "name": "Glen",
+  "dates": "",
+  "note": "",
+  "spouse": "Mamie",
+  "parent": "p29",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p73",
+  "gen": 30,
+  "name": "Eugene",
+  "dates": "",
+  "note": "",
+  "spouse": "Ruby",
+  "parent": "p29",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p74",
+  "gen": 30,
+  "name": "Donald",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p29",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p75",
+  "gen": 30,
+  "name": "Michael",
+  "dates": "",
+  "note": "",
+  "spouse": "Megan",
+  "parent": "p30",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p76",
+  "name": "Cynthia",
+  "gen": 30,
+  "dates": "",
+  "parent": "p30",
+  "spouse": "Christopher",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p77",
+  "name": "Ben Jr.",
+  "gen": 30,
+  "dates": "",
+  "parent": "p31",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p78",
+  "gen": 30,
+  "name": "Christopher",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p31",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p79",
+  "name": "Timothy",
+  "gen": 30,
+  "dates": "1986-",
+  "parent": "p31",
+  "spouse": "Andrew Tran",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p80",
+  "gen": 30,
+  "name": "Patricia",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p31",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p81",
+  "gen": 30,
+  "name": "Zhewku (uncertain spelling)",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p32",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p82",
+  "gen": 31,
+  "name": "Edwin",
+  "dates": "",
+  "note": "",
+  "spouse": "Mona",
+  "parent": "p48",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p83",
+  "gen": 31,
+  "name": "Baldwin (Buck Bucky)",
+  "dates": "",
+  "note": "",
+  "spouse": "Jenny",
+  "parent": "p48",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p84",
+  "gen": 31,
+  "name": "Vivian",
+  "dates": "",
+  "note": "Died suddenly (brain).",
+  "spouse": "David Appelt",
+  "parent": "p48",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p85",
+  "gen": 31,
+  "name": "Helen",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p49",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p86",
+  "gen": 31,
+  "name": "Shirley",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p49",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p87",
+  "gen": 31,
+  "name": "Pauline",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p49",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p88",
+  "gen": 31,
+  "name": "May",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p49",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p89",
+  "gen": 31,
+  "name": "Susan",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p49",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p90",
+  "gen": 31,
+  "name": "Sam",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p49",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p91",
+  "gen": 31,
+  "name": "Angela",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p50",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p92",
+  "gen": 31,
+  "name": "Arnold",
+  "dates": "",
+  "note": "",
+  "spouse": "Laura",
+  "parent": "p50",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p93",
+  "gen": 31,
+  "name": "Alex",
+  "dates": "",
+  "note": "",
+  "spouse": "Ines",
+  "parent": "p50",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p94",
+  "gen": 31,
+  "name": "Andrew",
+  "dates": "",
+  "note": "",
+  "spouse": "Christine",
+  "parent": "p50",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p95",
+  "gen": 31,
+  "name": "Edward",
+  "dates": "",
+  "note": "",
+  "spouse": "Tini",
+  "parent": "p51",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p96",
+  "gen": 31,
+  "name": "Eliza",
+  "dates": "",
+  "note": "",
+  "spouse": "Jared",
+  "parent": "p51",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p97",
+  "gen": 31,
+  "name": "Jeffrey",
+  "dates": "",
+  "note": "",
+  "spouse": "Alice",
+  "parent": "p52",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p98",
+  "gen": 31,
+  "name": "Ben",
+  "dates": "",
+  "note": "",
+  "spouse": "Karen",
+  "parent": "p52",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p99",
+  "gen": 31,
+  "name": "Jennifer",
+  "dates": "",
+  "note": "",
+  "spouse": "Jason Rhodes",
+  "parent": "p52",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p100",
+  "name": "Vanessa",
+  "gen": 31,
+  "dates": "1979-",
+  "parent": "p53",
+  "spouse": "Cliff Tamorria",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p101",
+  "name": "Victoria",
+  "gen": 31,
+  "dates": "1982-",
+  "parent": "p53",
+  "spouse": "Michael Nguyen",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p102",
+  "name": "Lesley",
+  "gen": 31,
+  "dates": "1980-",
+  "parent": "p54",
+  "spouse": "Hoi Wong",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p103",
+  "name": "Jason",
+  "gen": 31,
+  "dates": "1981-",
+  "parent": "p54",
+  "spouse": "",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p104",
+  "name": "Lauren",
+  "gen": 31,
+  "dates": "1986-",
+  "parent": "p54",
+  "spouse": "Jeff Williams",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p105",
+  "gen": 31,
+  "name": "Christine",
+  "dates": "",
+  "note": "",
+  "spouse": "Bibber",
+  "parent": "p56",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p106",
+  "gen": 31,
+  "name": "Jennifer",
+  "dates": "",
+  "note": "",
+  "spouse": "Brad Andersen",
+  "parent": "p57",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p107",
+  "gen": 31,
+  "name": "Andrew",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p57",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p108",
+  "gen": 31,
+  "name": "(son, unnamed)",
+  "dates": "",
+  "note": "Survived in China; whereabouts unknown.",
+  "spouse": "",
+  "parent": "p58",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p109",
+  "gen": 31,
+  "name": "Sophia",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p59",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p110",
+  "gen": 31,
+  "name": "Lan",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p59",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p111",
+  "gen": 31,
+  "name": "Liang",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p59",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p112",
+  "gen": 31,
+  "name": "Yusu",
+  "dates": "",
+  "note": "",
+  "spouse": "Kenneth Su (uncertain)",
+  "parent": "p60",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p113",
+  "gen": 31,
+  "name": "Nora",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p60",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p114",
+  "gen": 31,
+  "name": "Daniel",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p60",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p115",
+  "gen": 31,
+  "name": "Ken",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p61",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p116",
+  "gen": 31,
+  "name": "Samson",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p61",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p117",
+  "gen": 31,
+  "name": "Eric",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p62",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p118",
+  "gen": 31,
+  "name": "Helen",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p62",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p119",
+  "gen": 31,
+  "name": "Rebecca",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p63",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p120",
+  "gen": 31,
+  "name": "Kevin",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p63",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p121",
+  "gen": 31,
+  "name": "Raymond",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p64",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p122",
+  "gen": 31,
+  "name": "Stephanie",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p64",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p123",
+  "gen": 31,
+  "name": "Arnold",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p64",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p124",
+  "gen": 31,
+  "name": "Bryan",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p65",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p125",
+  "name": "Morgan",
+  "gen": 31,
+  "dates": "",
+  "parent": "p68",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p126",
+  "gen": 31,
+  "name": "Tyler Lee",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p67",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p127",
+  "gen": 31,
+  "name": "Trent David",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p67",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p128",
+  "gen": 31,
+  "name": "Tiffany",
+  "dates": "",
+  "note": "",
+  "spouse": "G. Zhai",
+  "parent": "p67",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p129",
+  "gen": 31,
+  "name": "Debra",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p67",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p130",
+  "gen": 31,
+  "name": "Amanda",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p67",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p131",
+  "name": "Jacob",
+  "gen": 31,
+  "dates": "",
+  "parent": "p75",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p132",
+  "gen": 31,
+  "name": "Liza",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p72",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p133",
+  "gen": 31,
+  "name": "Trenton",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p72",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p134",
+  "gen": 31,
+  "name": "Christine",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p73",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p135",
+  "name": "Joanne",
+  "gen": 31,
+  "dates": "",
+  "parent": "p78",
+  "spouse": "",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p136",
+  "name": "Christopher Jr. (CJ)",
+  "gen": 31,
+  "dates": "",
+  "parent": "p78",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p137",
+  "gen": 31,
+  "name": "Michael",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p75",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p138",
+  "gen": 31,
+  "name": "Brandon",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p75",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p139",
+  "gen": 31,
+  "name": "Brian",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p75",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p140",
+  "gen": 31,
+  "name": "Brittany",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p75",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p141",
+  "gen": 31,
+  "name": "Darrius",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p75",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p142",
+  "gen": 31,
+  "name": "Isaiah",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p75",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p143",
+  "gen": 31,
+  "name": "Wing Kau",
+  "dates": "",
+  "note": "",
+  "spouse": "James Chen",
+  "parent": "p81",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p144",
+  "gen": 32,
+  "name": "Philip",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p95",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p145",
+  "gen": 32,
+  "name": "Laura",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p95",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p146",
+  "gen": 32,
+  "name": "Sara",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p95",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p147",
+  "gen": 32,
+  "name": "Tave",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p96",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p148",
+  "gen": 32,
+  "name": "Everly",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p96",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p149",
+  "gen": 32,
+  "name": "Vera",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p96",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p150",
+  "gen": 32,
+  "name": "Toy",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p96",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p151",
+  "gen": 32,
+  "name": "Hailey",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p97",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p152",
+  "gen": 32,
+  "name": "Steven",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p97",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p153",
+  "gen": 32,
+  "name": "David",
+  "dates": "",
+  "note": "",
+  "spouse": "Helen",
+  "parent": "p98",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p154",
+  "gen": 32,
+  "name": "Parker",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p98",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p155",
+  "gen": 32,
+  "name": "Pristina (uncertain reading)",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p99",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p156",
+  "gen": 32,
+  "name": "Leah",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p101",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p157",
+  "gen": 32,
+  "name": "Caylee",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p101",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p158",
+  "gen": 32,
+  "name": "Serita",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p106",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p159",
+  "gen": 32,
+  "name": "Jamison",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p106",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p160",
+  "gen": 32,
+  "name": "Vincent",
+  "dates": "",
+  "note": "",
+  "spouse": "Sarah",
+  "parent": "p106",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p161",
+  "gen": 32,
+  "name": "Payton",
+  "dates": "",
+  "note": "m. Stephen",
+  "spouse": "",
+  "parent": "p106",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p162",
+  "gen": 32,
+  "name": "Tanya",
+  "dates": "",
+  "note": "",
+  "spouse": "Calvin",
+  "parent": "p106",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p163",
+  "gen": 32,
+  "name": "Christopher",
+  "dates": "",
+  "note": "m. Maggie",
+  "spouse": "",
+  "parent": "p106",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p164",
+  "gen": 32,
+  "name": "Caroline",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p106",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p165",
+  "gen": 32,
+  "name": "Elizabeth",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p112",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p166",
+  "gen": 32,
+  "name": "Alex",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p112",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p167",
+  "gen": 32,
+  "name": "Sophia",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p112",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p168",
+  "gen": 32,
+  "name": "Roland",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p112",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p169",
+  "gen": 32,
+  "name": "Raymond",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p112",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p170",
+  "gen": 32,
+  "name": "Jia Quan",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p171",
+  "gen": 32,
+  "name": "Maggie",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p172",
+  "gen": 32,
+  "name": "Mavie",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p173",
+  "gen": 32,
+  "name": "Kelvin",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p174",
+  "gen": 32,
+  "name": "Henry",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p175",
+  "name": "Daniel",
+  "gen": 32,
+  "dates": "",
+  "parent": "p82",
+  "spouse": "",
+  "note": "+ James",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p176",
+  "name": "Samantha",
+  "gen": 32,
+  "dates": "",
+  "parent": "p82",
+  "spouse": "Justin",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p177",
+  "name": "Brandon",
+  "gen": 32,
+  "dates": "",
+  "parent": "p83",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p178",
+  "name": "Rebecca",
+  "gen": 32,
+  "dates": "",
+  "parent": "p84",
+  "spouse": "",
+  "note": "+ Maia",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p179",
+  "name": "Victoria",
+  "gen": 32,
+  "dates": "",
+  "parent": "p84",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p180",
+  "name": "Andrea",
+  "gen": 32,
+  "dates": "",
+  "parent": "p91",
+  "spouse": "Tim Hess",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p181",
+  "name": "Michelle",
+  "gen": 32,
+  "dates": "",
+  "parent": "p91",
+  "spouse": "Steve Nemeth",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p182",
+  "name": "Andrew P.",
+  "gen": 32,
+  "dates": "",
+  "parent": "p92",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p183",
+  "name": "Justin",
+  "gen": 32,
+  "dates": "",
+  "parent": "p93",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p184",
+  "name": "Allison",
+  "gen": 32,
+  "dates": "",
+  "parent": "p93",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p185",
+  "name": "Brendan",
+  "gen": 32,
+  "dates": "",
+  "parent": "p94",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p186",
+  "gen": 32,
+  "name": "Chandler",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p187",
+  "gen": 32,
+  "name": "Kathleen",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p188",
+  "gen": 32,
+  "name": "Braden",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p189",
+  "gen": 32,
+  "name": "Preston",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p190",
+  "name": "Aria Quynh",
+  "gen": 32,
+  "dates": "",
+  "parent": "p95",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p191",
+  "name": "Nathan",
+  "gen": 32,
+  "dates": "",
+  "parent": "p96",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p192",
+  "name": "Quinn",
+  "gen": 32,
+  "dates": "",
+  "parent": "p96",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p193",
+  "name": "Christie",
+  "gen": 32,
+  "dates": "",
+  "parent": "p97",
+  "spouse": "John Paras",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p194",
+  "name": "Chrystal",
+  "gen": 32,
+  "dates": "",
+  "parent": "p97",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p195",
+  "name": "Justin",
+  "gen": 32,
+  "dates": "",
+  "parent": "p97",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": true
+ },
+ {
+  "id": "p196",
+  "name": "Ria",
+  "gen": 32,
+  "dates": "",
+  "parent": "p99",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p197",
+  "name": "Ben",
+  "gen": 32,
+  "dates": "",
+  "parent": "p99",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p198",
+  "name": "Makena",
+  "gen": 32,
+  "dates": "2012-",
+  "parent": "p101",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p199",
+  "name": "Madison",
+  "gen": 32,
+  "dates": "2017-",
+  "parent": "p101",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p200",
+  "name": "Carter",
+  "gen": 32,
+  "dates": "2019-",
+  "parent": "p101",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p201",
+  "name": "Linden",
+  "gen": 32,
+  "dates": "2012-",
+  "parent": "p102",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p202",
+  "name": "Holly",
+  "gen": 32,
+  "dates": "2017-",
+  "parent": "p102",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p203",
+  "name": "Logan",
+  "gen": 32,
+  "dates": "2022-",
+  "parent": "p104",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p204",
+  "name": "Evelyn",
+  "gen": 32,
+  "dates": "2024-",
+  "parent": "p104",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p205",
+  "gen": 32,
+  "name": "Trevor",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p112",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p206",
+  "gen": 32,
+  "name": "Sun",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p113",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p207",
+  "name": "Brighton",
+  "gen": 32,
+  "dates": "",
+  "parent": null,
+  "spouse": "",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p208",
+  "name": "Kinsley",
+  "gen": 32,
+  "dates": "",
+  "parent": null,
+  "spouse": "",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p209",
+  "name": "Mercer",
+  "gen": 32,
+  "dates": "",
+  "parent": null,
+  "spouse": "",
+  "note": "",
+  "confidence": "positional",
+  "uncertain": false
+ },
+ {
+  "id": "p210",
+  "gen": 32,
+  "name": "Rory",
+  "dates": "",
+  "note": "linking note near this cluster on the chart; parent uncertain",
+  "spouse": "",
+  "parent": "p126",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p211",
+  "gen": 32,
+  "name": "Bailey",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p127",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p212",
+  "gen": 32,
+  "name": "Fisher",
+  "dates": "",
+  "note": "(son)",
+  "spouse": "",
+  "parent": "p128",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p213",
+  "gen": 32,
+  "name": "Maci",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p128",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p214",
+  "gen": 33,
+  "name": "Lily",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p215",
+  "gen": 33,
+  "name": "Doris",
+  "dates": "",
+  "note": "(child)",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p216",
+  "gen": 33,
+  "name": "Malcolm",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p217",
+  "gen": 33,
+  "name": "Ella",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p218",
+  "gen": 33,
+  "name": "Lucas",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p219",
+  "gen": 33,
+  "name": "Issa",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p220",
+  "gen": 33,
+  "name": "Addy",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p221",
+  "gen": 33,
+  "name": "Avery",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p207",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p222",
+  "name": "Cole",
+  "gen": 33,
+  "dates": "",
+  "parent": "p180",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p223",
+  "name": "Mason",
+  "gen": 33,
+  "dates": "",
+  "parent": "p180",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p224",
+  "name": "Paige",
+  "gen": 33,
+  "dates": "",
+  "parent": "p181",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p225",
+  "name": "Brooke",
+  "gen": 33,
+  "dates": "",
+  "parent": "p181",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p226",
+  "gen": 33,
+  "name": "Malinda",
+  "dates": "",
+  "note": "",
+  "spouse": "Jose Delmundo",
+  "parent": "p213",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p227",
+  "gen": 33,
+  "name": "Patricia",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p213",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p228",
+  "gen": 33,
+  "name": "Anthea",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p213",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p229",
+  "gen": 33,
+  "name": "Elisa",
+  "dates": "",
+  "note": "",
+  "spouse": "",
+  "parent": "p213",
+  "confidence": "positional",
+  "uncertain": true
+ },
+ {
+  "id": "p230",
+  "name": "Maxwell",
+  "gen": 32,
+  "dates": "2019-",
+  "parent": "p100",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ },
+ {
+  "id": "p231",
+  "name": "Iris",
+  "gen": 32,
+  "dates": "2022-",
+  "parent": "p100",
+  "spouse": "",
+  "note": "",
+  "confidence": "clear",
+  "uncertain": false
+ }
+]
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  const STORAGE_KEY = "wong-family-tree-data-v1";
+  const BASELINE_KEY = "wong-family-tree-baseline-v1";
+  const CHANGELOG_KEY = "wong-family-tree-changelog-v1";
+  const EDITOR_NAME_KEY = "wong-family-tree-editor-name";
+  const MAX_LOG_ENTRIES = 300;
+  let DATA = [];
+  let CHANGELOG = [];
+  let editingId = null; // null while adding a new person
+  let scale = 1;
+  let hasFit = false;
+
+  // A visitor's browser only ever sees a NEW publish of this file if the file's
+  // own embedded data differs from whatever this browser saw last time — so we
+  // keep a copy of the exact embedded text alongside the working copy in
+  // localStorage. Unchanged file -> trust localStorage (it may hold this
+  // browser's own in-progress edits). Changed file -> the fresh publish wins,
+  // and becomes the new baseline. Without this, re-uploading an updated export
+  // would silently never reach anyone who had visited the page before, since
+  // their old cached copy would keep winning forever.
+  function loadData(){
+    const embeddedText = document.getElementById("family-data-store").textContent;
+    const storedBaseline = localStorage.getItem(BASELINE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && storedBaseline === embeddedText) {
+      try { return JSON.parse(saved); } catch(e){ /* fall through */ }
+    }
+    const fresh = JSON.parse(embeddedText);
+    localStorage.setItem(BASELINE_KEY, embeddedText);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+    return fresh;
+  }
+
+  function persist(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+    // keep the embedded script tag in sync so "Export updated page" always
+    // captures the live data, regardless of where it originally came from.
+    document.getElementById("family-data-store").textContent = JSON.stringify(DATA, null, 1);
+    // push to the shared live database, if the sync layer below managed to
+    // connect. If it never connected (offline, blocked network, no config),
+    // this is a no-op and everything behaves exactly like local-only mode.
+    if (window.__wftPushData) window.__wftPushData(DATA);
+  }
+
+  // ---------- "who's editing" + activity log ----------
+  // No login here -- just a one-time, name-only nudge so edits can carry an
+  // attribution and show up in a simple activity feed. Remembered per
+  // browser, not verified or enforced (same trust level as the rest of the
+  // shared-edit setup).
+  function getEditorName(){
+    let name = (localStorage.getItem(EDITOR_NAME_KEY) || "").trim();
+    if (!name) {
+      name = (window.prompt("Quick one-time question -- what's your name? It'll be attached to edits you make, so the family can see who updated what.", "") || "").trim();
+      if (name) localStorage.setItem(EDITOR_NAME_KEY, name);
+    }
+    return name || "Someone";
+  }
+
+  function loadChangelog(){
+    try {
+      const saved = JSON.parse(localStorage.getItem(CHANGELOG_KEY));
+      return Array.isArray(saved) ? saved : [];
+    } catch(e){ return []; }
+  }
+
+  function logChange(action, personName){
+    CHANGELOG.push({ by: getEditorName(), action, personName, at: new Date().toISOString() });
+    if (CHANGELOG.length > MAX_LOG_ENTRIES) CHANGELOG = CHANGELOG.slice(-MAX_LOG_ENTRIES);
+    localStorage.setItem(CHANGELOG_KEY, JSON.stringify(CHANGELOG));
+    if (window.__wftPushLog) window.__wftPushLog(CHANGELOG);
+    renderActivityLog();
+  }
+
+  // Full date + time, since this now sits on the page permanently rather
+  // than in a popup someone opens right after making the edit.
+  function formatWhen(iso){
+    try {
+      return new Date(iso).toLocaleString(undefined, { year:"numeric", month:"short", day:"numeric", hour:"numeric", minute:"2-digit" });
+    } catch(e){ return ""; }
+  }
+
+  function renderActivityLog(){
+    const list = document.getElementById("activityList");
+    if (!list) return;
+    if (!CHANGELOG.length) {
+      list.innerHTML = '<div class="empty">No edits logged yet. Once someone adds, edits, or deletes a person, it\'ll show up here.</div>';
+      return;
+    }
+    list.innerHTML = CHANGELOG.slice().reverse().map(entry => {
+      const verb = entry.action === "added" ? "added" : entry.action === "deleted" ? "deleted" : "edited";
+      return `<div class="log-entry">` +
+        `<div class="what"><span class="who">${escapeHtml(entry.by)}</span> ${verb} <span class="person">${escapeHtml(entry.personName)}</span></div>` +
+        `<div class="when">${escapeHtml(formatWhen(entry.at))}</div>` +
+        `</div>`;
+    }).join("");
+  }
+
+  function byId(id){ return DATA.find(p => p.id === id); }
+
+  function newId(){
+    let n = DATA.length + 1;
+    while (byId("p" + n)) n++;
+    return "p" + n;
+  }
+
+  // ---------- layout ----------
+  // Generation columns run left-to-right (this suits the data far better than a
+  // top-down/vertical layout: generation sizes here range from 1 person to 70+,
+  // so a vertical layout would force some rows to be absurdly wide. Columns let
+  // every generation just scroll vertically at a consistent, readable width).
+  const PALETTE = ["#4f46e5","#0d9488","#b45309","#be185d","#0369a1","#6d28d9","#15803d","#9333ea","#c2410c","#0e7490"];
+  function genColor(i){ return PALETTE[i % PALETTE.length]; }
+
+  // ---------- photo avatars ----------
+  // Colored-initials avatar by default; a real uploaded photo (person.photoUrl) takes
+  // over the same slot automatically. Exactly one gold, one red — no shade variation —
+  // so the color reads as "the Wong family palette" and never as an accidental code.
+  const AVATAR_SHADES = [
+    {l:82, c:0.15,  h:95},  // gold (true yellow-gold — 黃 Wong means gold/yellow)
+    {l:53, c:0.235, h:27}   // cadmium red
+  ];
+  function hashStr(s){ let h = 0; for (let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; } return Math.abs(h); }
+  function avatarShade(name){ return AVATAR_SHADES[hashStr(name || "") % AVATAR_SHADES.length]; }
+  function getInitials(name){
+    const clean = (name||"").replace(/\([^)]*\)/g,'').replace(/^(Sir|Lady)\s+/i,'').trim();
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "?";
+    if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  }
+  function avatarHtml(p, sizeClass){
+    if (p.photoUrl){
+      return `<div class="avatar ${sizeClass}" style="background-image:url('${p.photoUrl}')"></div>`;
+    }
+    const sh = avatarShade(p.name);
+    // true near-black on the light gold (not a hue-tinted brown, which reads muddy);
+    // white on the dark cadmium red, where it already reads cleanly
+    const fg = sh.l > 65 ? "oklch(18% 0.01 90)" : "oklch(99% 0.005 90)";
+    const shadow = sh.l > 65 ? "none" : "0 1px 2px oklch(15% 0 0 / .55),0 0 1px oklch(15% 0 0 / .4)";
+    return `<div class="avatar ${sizeClass}" style="background:oklch(${sh.l}% ${sh.c} ${sh.h});color:${fg};text-shadow:${shadow}">${getInitials(p.name)}</div>`;
+  }
+
+  const COL_W = 300;
+  const NODE_GAP = 16;        // vertical gap between two nodes in the same sibling group
+  const GROUP_GAP = 34;       // extra gap when a new sibling group (different parent) begins
+  const TOP_PAD = 56;         // room for the sticky-look generation label
+
+  function buildOrder(){
+    // group siblings together (depth-first over parent links), falling back to
+    // original array order for roots / orphans.
+    const childrenOf = {};
+    DATA.forEach(p => {
+      const key = p.parent || "__root__";
+      (childrenOf[key] = childrenOf[key] || []).push(p);
+    });
+    const order = [];
+    const visited = new Set();
+    function visit(p){
+      if (visited.has(p.id)) return;
+      visited.add(p.id);
+      order.push(p);
+      (childrenOf[p.id] || []).forEach(visit);
+    }
+    DATA.forEach(p => { if(!p.parent) visit(p); });
+    DATA.forEach(p => visit(p)); // orphans / broken refs
+    return order;
+  }
+
+  // ---------- render (measures real card sizes before placing them, so
+  // variable-length names/dates/spouse lines never overlap) ----------
+  function render(){
+    const gens = [...new Set(DATA.map(p => p.gen))].sort((a,b)=>a-b);
+    const colX = {};
+    gens.forEach((g,i) => colX[g] = 40 + i*COL_W);
+    const order = buildOrder();
+
+    const canvas = document.getElementById("canvas");
+    const svg = document.getElementById("lines");
+    canvas.querySelectorAll(".node, .gen-label").forEach(el => el.remove());
+    svg.innerHTML = "";
+
+    // Pass 1: create every card (off-flow, invisible) so the browser can tell
+    // us its real rendered height/width, then measure them all at once.
+    const els = {};
+    order.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "node" + (p.uncertain ? " uncertain" : "") + (!p.parent ? " root" : "");
+      div.style.visibility = "hidden";
+      div.style.left = "0px"; div.style.top = "0px";
+      div.style.borderTopColor = genColor(gens.indexOf(p.gen));
+      div.dataset.id = p.id;
+      const spouseNames = (p.spouses || []).map(s => s.name).filter(Boolean).join("; ");
+      div.innerHTML =
+        `<div class="node-row">` +
+          avatarHtml(p, "avatar-sm") +
+          `<div class="txt">` +
+            `<div class="name">${escapeHtml(p.name)}</div>` +
+            (p.dates ? `<div class="dates">${escapeHtml(p.dates)}</div>` : "") +
+            (spouseNames ? `<div class="spouse">${escapeHtml(spouseNames)}</div>` : "") +
+          `</div>` +
+        `</div>` +
+        (p.note ? `<div class="note-flag" title="Has a note — click to read">✎</div>` : "");
+      div.addEventListener("click", () => openEditor(p.id));
+      canvas.appendChild(div);
+      els[p.id] = div;
+    });
+    const size = {};
+    order.forEach(p => {
+      const el = els[p.id];
+      size[p.id] = { w: el.offsetWidth, h: el.offsetHeight };
+    });
+
+    // Pass 2: walk each generation's nodes in order, stacking them with a
+    // normal gap, and a wider gap whenever the sibling group (parent) changes,
+    // so families read as visually distinct clusters instead of one wall of boxes.
+    const pos = {};
+    gens.forEach(g => {
+      let y = TOP_PAD;
+      let lastParent = undefined;
+      order.filter(p => p.gen === g).forEach(p => {
+        if (lastParent !== undefined && p.parent !== lastParent) y += GROUP_GAP - NODE_GAP;
+        const { w, h } = size[p.id];
+        pos[p.id] = { x: colX[g], y, w, h, gen: g };
+        y += h + NODE_GAP;
+        lastParent = p.parent;
+      });
+    });
+
+    const maxY = Math.max(200, ...Object.values(pos).map(v => v.y + v.h)) + 80;
+    const maxX = colX[gens[gens.length-1]] + COL_W;
+    canvas.style.width = maxX + "px";
+    canvas.style.height = maxY + "px";
+    svg.setAttribute("width", maxX);
+    svg.setAttribute("height", maxY);
+
+    // generation labels
+    gens.forEach((g,i) => {
+      const lbl = document.createElement("div");
+      lbl.className = "gen-label";
+      lbl.style.left = colX[g] + "px";
+      lbl.style.background = genColor(i);
+      lbl.textContent = "Generation " + g;
+      canvas.appendChild(lbl);
+    });
+
+    // connector lines (drawn from each parent's true right edge/mid-height to
+    // each child's true left edge/mid-height, so they always meet the cards
+    // exactly regardless of card size)
+    DATA.forEach(p => {
+      if (!p.parent) return;
+      const a = pos[p.parent], b = pos[p.id];
+      if (!a || !b) return;
+      const x1 = a.x + a.w, y1 = a.y + a.h/2;
+      const x2 = b.x, y2 = b.y + b.h/2;
+      const mid = (x1 + x2) / 2;
+      const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+      path.setAttribute("d", `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`);
+      path.setAttribute("fill","none");
+      const positional = p.confidence === "positional";
+      const depthIdx = gens.indexOf(b.gen); // branches taper as the tree fans out into later generations
+      const width = Math.max(positional ? 1.0 : 1.15, (positional ? 2.0 : 2.7) - depthIdx * 0.16);
+      path.setAttribute("stroke", positional ? "var(--line-pos)" : "var(--line-clear)");
+      path.setAttribute("stroke-width", width.toFixed(2));
+      path.setAttribute("stroke-linecap","round");
+      if (positional) path.setAttribute("stroke-dasharray","5,4");
+      svg.appendChild(path);
+    });
+
+    // reveal the cards at their final, measured positions
+    order.forEach(p => {
+      const xy = pos[p.id];
+      const el = els[p.id];
+      el.style.left = xy.x + "px";
+      el.style.top = xy.y + "px";
+      el.style.visibility = "visible";
+    });
+
+    applyZoom();
+  }
+
+  function escapeHtml(s){
+    return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ---------- spouses (each spouse can carry their own name + notes) ----------
+  // Older data stored a single free-text "spouse" string (sometimes several
+  // names separated by ";"). migrateSpouses() converts any record still in
+  // that shape into a "spouses" array the first time it's seen, so existing
+  // text is never lost -- it just lands as each spouse's name, with an empty
+  // notes box ready to fill in. Runs on every load path (local, imported,
+  // and incoming from the shared database) so it's a no-op once everyone's
+  // data has moved over.
+  function migrateSpouses(arr){
+    (arr || []).forEach(p => {
+      if (!Array.isArray(p.spouses)) {
+        const legacy = (p.spouse || "").toString();
+        p.spouses = legacy
+          ? legacy.split(";").map(s => s.trim()).filter(Boolean).map(name => ({name, note: ""}))
+          : [];
+      }
+      delete p.spouse;
+    });
+    return arr;
+  }
+
+  function spouseRowHtml(name, note){
+    return `<div class="spouseRow">
+      <div class="spouseRowTop">
+        <input type="text" class="sp_name" placeholder="Spouse name" value="${escapeHtml(name || "")}">
+        <button type="button" class="sp_remove" title="Remove this spouse">✕</button>
+      </div>
+      <textarea class="sp_note" placeholder="Notes about this spouse (optional)">${escapeHtml(note || "")}</textarea>
+    </div>`;
+  }
+
+  function renderSpouseRows(list){
+    const wrap = document.getElementById("spouseList");
+    const rows = (list && list.length) ? list : [{name:"",note:""}];
+    wrap.innerHTML = rows.map(s => spouseRowHtml(s.name, s.note)).join("");
+    wrap.querySelectorAll(".sp_remove").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const allRows = wrap.querySelectorAll(".spouseRow");
+        if (allRows.length <= 1) {
+          // keep at least one (empty) row visible rather than leaving a gap
+          btn.closest(".spouseRow").querySelector(".sp_name").value = "";
+          btn.closest(".spouseRow").querySelector(".sp_note").value = "";
+          return;
+        }
+        btn.closest(".spouseRow").remove();
+      });
+    });
+  }
+
+  function collectSpouseRows(){
+    return Array.from(document.querySelectorAll("#spouseList .spouseRow")).map(row => ({
+      name: row.querySelector(".sp_name").value.trim(),
+      note: row.querySelector(".sp_note").value.trim()
+    })).filter(s => s.name || s.note);
+  }
+
+  document.getElementById("btnAddSpouse").addEventListener("click", () => {
+    const wrap = document.getElementById("spouseList");
+    wrap.insertAdjacentHTML("beforeend", spouseRowHtml("", ""));
+    const rows = wrap.querySelectorAll(".spouseRow");
+    const last = rows[rows.length - 1];
+    last.querySelector(".sp_remove").addEventListener("click", () => {
+      const allRows = wrap.querySelectorAll(".spouseRow");
+      if (allRows.length <= 1) {
+        last.querySelector(".sp_name").value = "";
+        last.querySelector(".sp_note").value = "";
+        return;
+      }
+      last.remove();
+    });
+    last.querySelector(".sp_name").focus();
+  });
+
+  // ---------- zoom / pan ----------
+  function applyZoom(){
+    document.getElementById("canvas").style.transform = `scale(${scale})`;
+    document.getElementById("zoomlabel").textContent = Math.round(scale*100) + "%";
+  }
+  document.getElementById("btnZoomIn").onclick = () => { scale = Math.min(2, scale + 0.1); applyZoom(); };
+  document.getElementById("btnZoomOut").onclick = () => { scale = Math.max(0.2, scale - 0.1); applyZoom(); };
+  document.getElementById("btnFit").onclick = () => {
+    const wrap = document.getElementById("canvas-wrap");
+    const canvas = document.getElementById("canvas");
+    const sx = (wrap.clientWidth - 40) / canvas.offsetWidth;
+    // On a phone-width screen, fitting the *entire* tree (10 generation columns)
+    // would shrink text past legibility — floor it higher and let people pan
+    // around instead of squinting at a tiny overview.
+    const floor = window.innerWidth < 720 ? 0.45 : 0.15;
+    scale = Math.max(floor, Math.min(1, sx));
+    applyZoom();
+  };
+
+  // ---------- editor ----------
+  function populateParentSelect(excludeId){
+    const sel = document.getElementById("f_parent");
+    sel.innerHTML = '<option value="">— none (root of chart) —</option>';
+    DATA.slice().sort((a,b)=>a.gen-b.gen || a.name.localeCompare(b.name)).forEach(p => {
+      if (p.id === excludeId) return;
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = `${p.name} (gen ${p.gen})`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function openEditor(id){
+    editingId = id;
+    const isNew = !id;
+    document.getElementById("editorTitle").textContent = isNew ? "Add person" : "Edit person";
+    const p = isNew ? {name:"",gen:"",dates:"",parent:"",spouses:[],note:"",confidence:"clear",uncertain:false} : byId(id);
+    populateParentSelect(id);
+    document.getElementById("f_name").value = p.name || "";
+    document.getElementById("f_gen").value = p.gen ?? "";
+    document.getElementById("f_dates").value = p.dates || "";
+    document.getElementById("f_parent").value = p.parent || "";
+    renderSpouseRows(p.spouses || []);
+    document.getElementById("f_note").value = p.note || "";
+    document.getElementById("f_confidence").value = p.confidence || "clear";
+    document.getElementById("f_uncertain").checked = !!p.uncertain;
+    document.getElementById("btnDelete").style.display = isNew ? "none" : "block";
+    document.getElementById("photoSection").style.display = isNew ? "none" : "block";
+    document.getElementById("photoSectionNew").style.display = isNew ? "block" : "none";
+    if (!isNew) updateEditorAvatarPreview(p);
+    const meta = document.getElementById("editorMeta");
+    if (!isNew && p.lastEditedBy) {
+      meta.textContent = `Last updated by ${p.lastEditedBy}${p.lastEditedAt ? " · " + formatWhen(p.lastEditedAt) : ""}`;
+      meta.style.display = "block";
+    } else {
+      meta.style.display = "none";
+    }
+    document.getElementById("overlay").style.display = "block";
+    document.getElementById("editor").style.display = "flex";
+  }
+
+  function closeEditor(){
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("editor").style.display = "none";
+    editingId = null;
+  }
+
+  // ---------- photo upload (editing person's own card only — see #photoSection) ----------
+  function updateEditorAvatarPreview(p){
+    document.getElementById("editorAvatarWrap").innerHTML = avatarHtml(p, "avatar-lg");
+    document.getElementById("btnRemovePhoto").style.display = p.photoUrl ? "inline-flex" : "none";
+  }
+  function setPhotoStatus(msg, isError){
+    const el = document.getElementById("photoStatus");
+    el.textContent = msg || "";
+    el.style.color = isError ? "var(--uncertain)" : "var(--sub2)";
+  }
+  document.getElementById("btnUploadPhoto").onclick = () => document.getElementById("photoInput").click();
+  document.getElementById("photoInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file || !editingId) return;
+    if (!file.type.startsWith("image/")) { setPhotoStatus("Please choose an image file.", true); return; }
+    if (file.size > 8 * 1024 * 1024) { setPhotoStatus("That image is over 8MB — please choose a smaller one.", true); return; }
+    if (!window.__wftUploadPhoto) { setPhotoStatus("Photo upload isn't available right now — try again in a moment.", true); return; }
+    const p = byId(editingId);
+    if (!p) return;
+    setPhotoStatus("Uploading…", false);
+    try {
+      const { url, path } = await window.__wftUploadPhoto(file, editingId);
+      const oldPath = p.photoPath;
+      p.photoUrl = url;
+      p.photoPath = path;
+      p.lastEditedBy = getEditorName();
+      p.lastEditedAt = new Date().toISOString();
+      persist();
+      logChange("added a photo for", p.name);
+      render();
+      updateEditorAvatarPreview(p);
+      setPhotoStatus("Photo updated.", false);
+      if (oldPath && window.__wftDeletePhoto) window.__wftDeletePhoto(oldPath);
+    } catch (err) {
+      console.warn("[Wong Family Tree] Photo upload failed:", err);
+      setPhotoStatus("Upload failed — check your connection and try again.", true);
+    }
+  });
+  document.getElementById("btnRemovePhoto").onclick = () => {
+    if (!editingId) return;
+    const p = byId(editingId);
+    if (!p || !p.photoUrl) return;
+    if (!confirm(`Remove ${p.name}'s photo?`)) return;
+    const oldPath = p.photoPath;
+    delete p.photoUrl;
+    delete p.photoPath;
+    p.lastEditedBy = getEditorName();
+    p.lastEditedAt = new Date().toISOString();
+    persist();
+    logChange("removed the photo for", p.name);
+    render();
+    updateEditorAvatarPreview(p);
+    setPhotoStatus("Photo removed.", false);
+    if (oldPath && window.__wftDeletePhoto) window.__wftDeletePhoto(oldPath);
+  };
+
+  document.getElementById("f_parent").addEventListener("change", (e) => {
+    const parentId = e.target.value;
+    const genField = document.getElementById("f_gen");
+    if (parentId) {
+      const parent = byId(parentId);
+      if (parent && !genField.value) genField.value = parent.gen + 1;
+      else if (parent) genField.value = parent.gen + 1;
+    }
+  });
+
+  document.getElementById("btnCancel").onclick = closeEditor;
+  document.getElementById("overlay").onclick = closeEditor;
+
+  document.getElementById("btnSave").onclick = () => {
+    const name = document.getElementById("f_name").value.trim();
+    if (!name) { alert("Please enter a name."); return; }
+    const gen = parseInt(document.getElementById("f_gen").value, 10);
+    if (isNaN(gen)) { alert("Please enter a generation number."); return; }
+    const wasNew = !editingId;
+    // read the photo fields fresh off DATA (not off the form, which has no photo
+    // fields) so a photo uploaded/removed earlier in this same editor session —
+    // that flow persists immediately, independent of Save — is never lost here
+    const existing = editingId ? byId(editingId) : null;
+    const rec = {
+      id: editingId || newId(),
+      name,
+      gen,
+      dates: document.getElementById("f_dates").value.trim(),
+      parent: document.getElementById("f_parent").value || null,
+      spouses: collectSpouseRows(),
+      note: document.getElementById("f_note").value.trim(),
+      confidence: document.getElementById("f_confidence").value,
+      uncertain: document.getElementById("f_uncertain").checked,
+      lastEditedBy: getEditorName(),
+      lastEditedAt: new Date().toISOString()
+    };
+    if (existing && existing.photoUrl) { rec.photoUrl = existing.photoUrl; rec.photoPath = existing.photoPath; }
+    if (rec.parent === rec.id) { alert("A person can't be their own parent."); return; }
+    if (editingId) {
+      const idx = DATA.findIndex(p => p.id === editingId);
+      DATA[idx] = rec;
+    } else {
+      DATA.push(rec);
+    }
+    persist();
+    logChange(wasNew ? "added" : "edited", rec.name);
+    render();
+    closeEditor();
+  };
+
+  document.getElementById("btnDelete").onclick = () => {
+    if (!editingId) return;
+    const children = DATA.filter(p => p.parent === editingId);
+    if (children.length > 0) {
+      const ok = confirm(`${children.length} people are linked to this person as their parent. Delete anyway and re-link them to this person's own parent?`);
+      if (!ok) return;
+      const rec = byId(editingId);
+      children.forEach(c => c.parent = rec.parent || null);
+    }
+    const deletedName = (byId(editingId) || {}).name || "someone";
+    DATA = DATA.filter(p => p.id !== editingId);
+    persist();
+    logChange("deleted", deletedName);
+    render();
+    closeEditor();
+  };
+
+  document.getElementById("btnAdd").onclick = () => openEditor(null);
+
+  // ---------- search ----------
+  document.getElementById("search").addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll(".node").forEach(n => n.classList.remove("highlight"));
+    if (!q) return;
+    const match = DATA.find(p => p.name.toLowerCase().includes(q));
+    if (match) {
+      const el = document.querySelector(`.node[data-id="${match.id}"]`);
+      if (el) {
+        el.classList.add("highlight");
+        el.scrollIntoView({behavior:"smooth", block:"center", inline:"center"});
+      }
+    }
+  });
+
+  // ---------- import / export ----------
+  document.getElementById("btnExportJSON").onclick = () => {
+    const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "wong-family-tree-data.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  document.getElementById("btnImportJSON").onclick = () => document.getElementById("fileimport").click();
+  document.getElementById("fileimport").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const imported = JSON.parse(reader.result);
+        if (!Array.isArray(imported)) throw new Error("not an array");
+        DATA = migrateSpouses(imported);
+        persist();
+        render();
+        alert("Imported " + DATA.length + " people.");
+      } catch(err) {
+        alert("Could not read that file as family tree JSON: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  document.getElementById("btnExportHTML").onclick = () => {
+    persist(); // make sure the embedded script tag matches live DATA
+    const clone = document.documentElement.cloneNode(true);
+    // close any open editor state in the exported copy
+    clone.querySelector("#overlay").style.display = "none";
+    clone.querySelector("#editor").style.display = "none";
+    const html = "<!DOCTYPE html>\n" + clone.outerHTML;
+    const blob = new Blob([html], {type:"text/html"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "wong-family-tree.html";
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // ---------- fullscreen ----------
+  const appEl = document.getElementById("app");
+  document.getElementById("btnFullscreen").onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (appEl.requestFullscreen) appEl.requestFullscreen();
+  };
+  document.addEventListener("fullscreenchange", () => {
+    document.getElementById("btnFullscreen").textContent = document.fullscreenElement ? "⤢" : "⛶";
+    setTimeout(() => document.getElementById("btnFit").click(), 60);
+  });
+
+  // ---------- theme ----------
+  const THEME_KEY = "wong-family-tree-theme";
+  function applyTheme(t){
+    if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+    document.getElementById("btnTheme").textContent = (t === "dark") ? "☀️" : "🌙";
+  }
+  document.getElementById("btnTheme").onclick = () => {
+    const current = document.documentElement.getAttribute("data-theme")
+      || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const next = current === "dark" ? "light" : "dark";
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  };
+  applyTheme(localStorage.getItem(THEME_KEY));
+
+  // ---------- live shared sync (Firebase Realtime Database) ----------
+  // The module script below (loaded separately, since Firebase only ships as
+  // an ES module from the CDN) fills these two slots in once it connects:
+  //   __wftPushData(data)   -> write this browser's data up to the shared DB
+  // and calls these two, which we define here:
+  //   __wftGetCurrentData() -> hand back whatever this browser currently has,
+  //                            used once to seed the DB the very first time
+  //                            it's ever empty
+  //   __wftOnRemoteData(d)  -> called whenever the shared DB's data changes,
+  //                            including changes made by someone else
+  // If the module never loads or never connects (offline, blocked network,
+  // no Firebase project configured), none of this fires and the tool works
+  // exactly as it always has, off localStorage + the embedded data below.
+  window.__wftGetCurrentData = function(){ return DATA; };
+  window.__wftOnRemoteData = function(remote){
+    if (!Array.isArray(remote) || !remote.length) return;
+    const remoteText = JSON.stringify(remote);
+    if (remoteText === JSON.stringify(DATA)) return; // nothing actually changed
+    DATA = migrateSpouses(remote);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+    document.getElementById("family-data-store").textContent = JSON.stringify(DATA, null, 1);
+    localStorage.setItem(BASELINE_KEY, document.getElementById("family-data-store").textContent);
+    render();
+  };
+  // Same idea, one level down: the activity log syncs on its own path so
+  // everyone's "who changed what" feed matches, same as the tree data does.
+  window.__wftGetCurrentLog = function(){ return CHANGELOG; };
+  window.__wftOnRemoteLog = function(remote){
+    if (!Array.isArray(remote)) return;
+    const remoteText = JSON.stringify(remote);
+    if (remoteText === JSON.stringify(CHANGELOG)) return;
+    CHANGELOG = remote;
+    localStorage.setItem(CHANGELOG_KEY, JSON.stringify(CHANGELOG));
+    renderActivityLog();
+  };
+
+  // ---------- init ----------
+  DATA = migrateSpouses(loadData());
+  CHANGELOG = loadChangelog();
+  render();
+  renderActivityLog();
+  window.addEventListener("resize", () => {});
+  setTimeout(() => document.getElementById("btnFit").click(), 50);
+})();
+</script>
+
+<script type="module">
+  // ---------- Firebase Realtime Database: live multi-user sync ----------
+  // This talks to a shared database so every open copy of this page (any
+  // computer, any browser) sees the same family-tree data and stays in
+  // sync automatically. It is entirely additive: if this fails to load or
+  // connect for any reason, the page falls back to the local-only behavior
+  // it always had (see the plain <script> block above).
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWiPSyvdPoU8-LH0C3j8IZY7qHn19gXuw",
+    authDomain: "wong-family-tree.firebaseapp.com",
+    databaseURL: "https://wong-family-tree-default-rtdb.firebaseio.com",
+    projectId: "wong-family-tree",
+    storageBucket: "wong-family-tree.firebasestorage.app",
+    messagingSenderId: "482850066709",
+    appId: "1:482850066709:web:19e189598e1173b6f5991c"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dataRef = ref(db, "wongFamilyTree");
+    const logRef = ref(db, "wongFamilyTreeLog");
+    const storage = getStorage(app);
+
+    // ---------- photo uploads (Firebase Storage) ----------
+    // Anyone with the page open can upload a photo for anyone else — there's no
+    // login system here, by design (most of the people in this tree can't upload
+    // their own photo; a living relative uploading an old photo of an ancestor is
+    // the whole point). Storage's own security rules are what actually keep this
+    // to images under a sane size — see the setup notes delivered alongside this file.
+    window.__wftUploadPhoto = async function(file, personId){
+      const path = `photos/${personId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9_.-]/g,"_")}`;
+      const r = storageRef(storage, path);
+      await uploadBytes(r, file, { contentType: file.type });
+      const url = await getDownloadURL(r);
+      return { url, path };
+    };
+    window.__wftDeletePhoto = async function(path){
+      // Best-effort cleanup of the previous photo when it's replaced or removed —
+      // never blocks the UI and never surfaces an error if it fails.
+      try { await deleteObject(storageRef(storage, path)); }
+      catch (err) { console.warn("[Wong Family Tree] Could not delete old photo (leaving it in Storage):", err); }
+    };
+
+    window.__wftPushData = function(data){
+      set(dataRef, data).catch(err => console.warn("[Wong Family Tree] Could not save to the shared database:", err));
+    };
+    window.__wftPushLog = function(log){
+      set(logRef, log).catch(err => console.warn("[Wong Family Tree] Could not save the activity log:", err));
+    };
+
+    onValue(dataRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val === null) {
+        // Shared database is empty (first time it's ever been used) -- seed
+        // it with whatever this page currently has, so everyone else who
+        // opens it from now on sees real data instead of nothing.
+        if (window.__wftGetCurrentData) window.__wftPushData(window.__wftGetCurrentData());
+        return;
+      }
+      if (window.__wftOnRemoteData) window.__wftOnRemoteData(val);
+    }, (err) => {
+      console.warn("[Wong Family Tree] Live sync listener error (running in local-only mode):", err);
+    });
+
+    onValue(logRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val === null) {
+        if (window.__wftGetCurrentLog) window.__wftPushLog(window.__wftGetCurrentLog());
+        return;
+      }
+      if (window.__wftOnRemoteLog) window.__wftOnRemoteLog(val);
+    }, (err) => {
+      console.warn("[Wong Family Tree] Activity log sync error (running in local-only mode):", err);
+    });
+
+    console.log("[Wong Family Tree] Connected to the shared live database.");
+  } catch (err) {
+    console.warn("[Wong Family Tree] Live sync unavailable, running in local-only mode:", err);
+  }
+</script>
+</body>
+</html>
