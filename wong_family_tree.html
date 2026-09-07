@@ -6,7 +6,7 @@
 <title>The Wong Family</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:oklch(98.2% 0.004 85); --panel:oklch(100% 0 0); --ink:oklch(17% 0.012 40);
@@ -40,24 +40,43 @@
     }
   }
   *{box-sizing:border-box;}
-  html{margin:0;padding:0;background:var(--bg);}
-  body{margin:0;padding:0 0 40px;color:var(--ink);background:var(--bg);
+  html{margin:0;padding:0;height:100%;background:var(--bg);}
+  body{margin:0;padding:0;height:100%;color:var(--ink);background:var(--bg);
     font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;}
 
-  /* Everything the tree needs lives inside this one box, positioned in the
-     normal page flow — so dropping this file into an existing site (or an
-     "embed HTML" block) never covers that site's own header/nav, and the
-     page around it scrolls normally. Fixed/absolute elements below are all
-     scoped to this box, never to the browser viewport. */
+  /* This page is always loaded on its own, in the iframe Squarespace's embed
+     block points at -- never pasted inline into a longer page -- so #app is
+     sized to fill exactly the height that iframe is given (height:100% all
+     the way down from html), rather than capping itself at some fraction of
+     the viewport. That's what keeps the bottom of #app flush with the bottom
+     of the iframe: any leftover gap below the tree is the iframe's own
+     height being set taller than this page needs, which is a setting on the
+     Squarespace embed block, not something this page can see or fix. */
   #app{
     position:relative; isolation:isolate; width:100%;
-    height:min(85vh, 900px); min-height:520px;
+    height:100%; min-height:520px;
     overflow:hidden; background:var(--bg);
     border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow-lg);
     display:flex; flex-direction:column;
   }
   #app:fullscreen{ height:100vh; border-radius:0; }
+
+  /* A faint family-seal watermark in the tree canvas's own corner. Anchored
+     to #contentCol (not #app as a whole, since the guestbook sidebar owns
+     #app's actual bottom-left corner and would just hide it) but its
+     `bottom` offset matches #activityBar's own height so it sits in
+     #stage's corner specifically, rather than being covered by the solid
+     Recent Activity panel docked below it. Stays put while the tree
+     scrolls (it's a sibling of #stage, not a child of it), never
+     intercepts clicks, and sits behind everything via negative z-index. */
+  #watermark{
+    position:absolute; left:28px; bottom:120px; z-index:-1;
+    font-family:'Ma Shan Zheng',"PingFang SC","Microsoft YaHei","Noto Sans SC","Songti SC",serif;
+    font-size:min(38vh, 340px); line-height:1; font-weight:400;
+    color:var(--uncertain); opacity:.15;
+    pointer-events:none; user-select:none;
+  }
 
   /* toolbar/breadcrumb/stage/activityBar stack as normal flex children (not
      absolutely-positioned regions with hand-guessed pixel offsets) so a
@@ -111,8 +130,7 @@
   #breadcrumb .dots{color:var(--sub2);letter-spacing:1px;}
 
   #stage{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;color:var(--ink);
-    display:flex;flex-direction:column;align-items:center;padding:30px 24px 40px;
-    background:var(--bg);}
+    display:flex;flex-direction:column;align-items:center;padding:30px 24px 40px;}
 
   .tierLabel{display:flex;align-items:center;gap:6px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;
     font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub2);margin-bottom:10px;}
@@ -169,13 +187,20 @@
     justify-content:center;box-shadow:var(--shadow);cursor:pointer;transition:color .15s,border-color .15s;}
   #focusCard .editBadge:hover{color:var(--accent);border-color:var(--accent);}
 
-  #spouseCards{display:flex;flex-direction:column;gap:8px;padding-top:20px;max-width:200px;}
+  #spouseCards{display:flex;flex-direction:column;gap:8px;padding-top:20px;max-width:260px;}
   .spouse-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:9px;padding:8px 13px;
-    font-size:12px;color:var(--ink);display:flex;align-items:center;gap:9px;font-weight:500;}
+    font-size:12px;color:var(--ink);display:flex;align-items:center;gap:9px;font-weight:500;width:max-content;}
+  .spouse-card > div{min-width:0;}
+  .spouse-card > div > span{white-space:nowrap;}
   .spouse-card{cursor:pointer;transition:background .15s;}
   .spouse-card:hover{background:var(--accent-soft);filter:brightness(1.03);}
-  .spouse-card[data-spouse-photo] .avatar{transition:transform .12s;}
-  .spouse-card[data-spouse-photo] .avatar:hover{transform:scale(1.08);}
+  .spouse-card .avatar{transition:transform .12s;}
+  .spouse-card:hover .avatar{transform:scale(1.08);}
+  .spouseEditBadge{flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;color:var(--sub);opacity:.5;background:var(--panel);border:1px solid var(--border);
+    transition:opacity .15s,color .15s,border-color .15s;}
+  .spouseEditBadge:hover{opacity:1;color:var(--accent);border-color:var(--accent);}
+  .spouse-dates{font-weight:400;color:var(--sub);font-size:11px;margin-top:1px;font-variant-numeric:tabular-nums;white-space:nowrap;}
   .spouse-note{font-weight:400;color:var(--sub);font-size:11px;margin-top:2px;line-height:1.4;}
 
   .vline{width:1.4px;height:32px;background:var(--border);margin:2px auto;}
@@ -239,6 +264,7 @@
     #activityBar{height:148px;}
     #activityBar h2{padding:7px 12px 4px;}
     #activityBar .body{padding:0 12px 24px;}
+    #watermark{bottom:118px; font-size:min(28vh, 230px);}
   }
 
   /* photo avatars — colored initials by default (exactly one gold, one red — the
@@ -293,7 +319,7 @@
   /* Guestbook — a permanent left-hand panel (not a drawer), always visible
      beside the tree, newest message first. */
   #mainRow{flex:1 1 auto;min-height:0;display:flex;overflow:hidden;}
-  #contentCol{flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column;}
+  #contentCol{position:relative;isolation:isolate;overflow:hidden;flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--bg);}
 
   #guestbookPanel{
     flex:none;width:270px;background:var(--panel);border-right:1px solid var(--border);
@@ -368,7 +394,7 @@
     #toolbar button{padding:7px 9px;font-size:12.5px;}
     .lbl{display:none;}
     .divider{margin:8px 1px;}
-    #app{height:min(88vh, 900px);border-radius:10px;}
+    #app{height:100%;border-radius:10px;}
     #toolbar{border-radius:10px 10px 0 0;}
     #breadcrumb{font-size:10.5px;padding:0 12px;}
     #stage{padding:20px 14px 32px;}
@@ -426,6 +452,7 @@
     </div>
   </div>
   <div id="contentCol">
+    <div id="watermark" aria-hidden="true">黃</div>
     <div id="breadcrumb"></div>
     <div id="stage"></div>
     <div id="activityBar">
@@ -3231,14 +3258,19 @@
 
   // ---------- photo avatars ----------
   // Colored-initials avatar by default; a real uploaded photo (person.photoUrl) takes
-  // over the same slot automatically. Exactly one gold, one red — no shade variation —
-  // so the color reads as "the Wong family palette" and never as an accidental code.
+  // over the same slot automatically. Exactly one gold, one red -- and the color is
+  // meaningful, not decorative: gold marks someone whose line continues (they have
+  // recorded children), red marks a line that ends there. Spouses have no children
+  // recorded under their own id (kids always attach to the blood-line person), so
+  // they read red by the same rule -- not a special case, just how the data works.
   const AVATAR_SHADES = [
-    {l:82, c:0.15,  h:95},  // gold (true yellow-gold — 黃 Wong means gold/yellow)
-    {l:53, c:0.235, h:27}   // cadmium red
+    {l:82, c:0.15,  h:95},  // gold (true yellow-gold — 黃 Wong means gold/yellow) — has children
+    {l:53, c:0.235, h:27}   // cadmium red — no recorded children
   ];
-  function hashStr(s){ let h = 0; for (let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) | 0; } return Math.abs(h); }
-  function avatarShade(name){ return AVATAR_SHADES[hashStr(name || "") % AVATAR_SHADES.length]; }
+  function avatarShade(p){
+    const hasChildren = !!(p && p.id && kids(p.id).length > 0);
+    return AVATAR_SHADES[hasChildren ? 0 : 1];
+  }
   function getInitials(name){
     const clean = (name||"").replace(/\([^)]*\)/g,'').replace(/^(Sir|Lady)\s+/i,'').trim();
     const parts = clean.split(/\s+/).filter(Boolean);
@@ -3250,7 +3282,7 @@
     if (p.photoUrl){
       return `<div class="avatar ${sizeClass}" style="background-image:url('${p.photoUrl}')"></div>`;
     }
-    const sh = avatarShade(p.name);
+    const sh = avatarShade(p);
     // true near-black on the light gold (not a hue-tinted brown, which reads muddy);
     // white on the dark cadmium red, where it already reads cleanly
     const fg = sh.l > 65 ? "oklch(18% 0.01 90)" : "oklch(99% 0.005 90)";
@@ -3304,7 +3336,7 @@
       bp.style.color = "transparent";
       bp.textContent = "";
     } else {
-      const sh = avatarShade(p.name);
+      const sh = avatarShade(p);
       bp.style.backgroundImage = `linear-gradient(160deg, oklch(${Math.min(96,sh.l+6)}% ${sh.c*0.9} ${sh.h}), oklch(${Math.max(20,sh.l-10)}% ${sh.c} ${sh.h}))`;
       bp.style.color = sh.l > 65 ? "oklch(18% 0.01 90)" : "oklch(99% 0.005 90)";
       bp.style.textShadow = sh.l > 65 ? "none" : "0 2px 4px oklch(15% 0 0 / .55),0 0 2px oklch(15% 0 0 / .4)";
@@ -3382,7 +3414,10 @@
     html += `</div>`;
 
     if (spouses.length){
-      html += `<div id="spouseCards">` + spouses.map(s => `<div class="spouse-card"${s.photoUrl?' data-spouse-photo="1"':''} data-spouse-id="${s.id||''}" data-spouse-name="${escapeHtml(s.name)}" data-spouse-photo-url="${s.photoUrl?escapeHtml(s.photoUrl):''}">${avatarHtml({name:s.name, photoUrl:s.photoUrl},"avatar-sm")}<div><span>${escapeHtml(s.name)}</span>${s.note?`<div class="spouse-note">${escapeHtml(s.note)}</div>`:""}</div></div>`).join("") + `</div>`;
+      html += `<div id="spouseCards">` + spouses.map(s => {
+        const nd = splitNameDates(s.name);
+        return `<div class="spouse-card"${s.photoUrl?' data-spouse-photo="1"':''} data-spouse-id="${s.id||''}" data-spouse-name="${escapeHtml(s.name)}" data-spouse-photo-url="${s.photoUrl?escapeHtml(s.photoUrl):''}">${avatarHtml({name:s.name, photoUrl:s.photoUrl},"avatar-sm")}<div><span>${escapeHtml(nd.name)}</span>${nd.dates?`<div class="spouse-dates">${escapeHtml(nd.dates)}</div>`:""}${s.note?`<div class="spouse-note">${escapeHtml(s.note)}</div>`:""}</div><div class="spouseEditBadge" title="Edit ${escapeHtml(s.name)}">${ICON.pencil}</div></div>`;
+      }).join("") + `</div>`;
     } else { html += `<div style="width:1px"></div>`; }
     html += `</div>`; // #focusRow
 
@@ -3426,29 +3461,36 @@
     if (addPhotoBtn) addPhotoBtn.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
     const editBadge = stage.querySelector(".editBadge");
     if (editBadge) editBadge.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
-    // tapping a spouse card either shows their photo bigger (same cameo the
-    // main person gets) or, if they don't have one yet, jumps straight to
-    // the editor's Spouse(s) section -- that's the only place a spouse photo
-    // can be added, so tapping the card is never a dead end
+    // tapping a spouse card always shows their portrait bigger -- same cameo
+    // the main person gets, complete with the same initials-on-gradient
+    // fallback when they don't have a photo yet (see updateBigPortrait) --
+    // so the card is never a dead end even before a photo exists. The small
+    // pencil badge is the dedicated way into the editor's Spouse(s) section
+    // to actually add/change that photo, mirroring the main person's own
+    // editBadge + avatar-lg-wrap split.
     stage.querySelectorAll('.spouse-card').forEach(card => {
       card.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (card.hasAttribute("data-spouse-photo")) {
-          toggleBigPortrait({ name: card.dataset.spouseName, photoUrl: card.dataset.spousePhotoUrl });
-          return;
-        }
-        openEditor(p.id);
-        const spouseId = card.dataset.spouseId;
-        if (!spouseId) return;
-        requestAnimationFrame(() => {
-          const row = document.querySelector(`#spouseList .spouseRow[data-id="${spouseId}"]`);
-          if (!row) return;
-          row.scrollIntoView({ block: "center" });
-          row.style.transition = "background .3s";
-          row.style.background = "var(--accent-soft)";
-          setTimeout(() => { row.style.background = ""; }, 900);
-        });
+        if (e.target.closest(".spouseEditBadge")) return; // that icon has its own job (below)
+        toggleBigPortrait({ name: card.dataset.spouseName, photoUrl: card.dataset.spousePhotoUrl });
       });
+      const badge = card.querySelector(".spouseEditBadge");
+      if (badge){
+        badge.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openEditor(p.id);
+          const spouseId = card.dataset.spouseId;
+          if (!spouseId) return;
+          requestAnimationFrame(() => {
+            const row = document.querySelector(`#spouseList .spouseRow[data-id="${spouseId}"]`);
+            if (!row) return;
+            row.scrollIntoView({ block: "center" });
+            row.style.transition = "background .3s";
+            row.style.background = "var(--accent-soft)";
+            setTimeout(() => { row.style.background = ""; }, 900);
+          });
+        });
+      }
     });
 
     renderBreadcrumb(id);
@@ -3496,6 +3538,19 @@
 
   function escapeHtml(s){
     return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // Spouses don't have their own "dates" field like the main person does --
+  // people just type a trailing "1912-1995" (or "b. 1912", or "1912-" for
+  // still-living) right into the name field. Splits that off so it always
+  // renders on its own line underneath the name (same as the main person's
+  // separate name/.dates rows), never sharing a line with the name and
+  // never breaking in the middle of the range itself.
+  function splitNameDates(name){
+    const raw = String(name || "");
+    const m = raw.match(/^(.*?)\s+((?:b\.\s*)?\d{3,4}\s*[-–—]\s*\d{0,4})$/);
+    if (!m) return { name: raw, dates: "" };
+    return { name: m[1], dates: m[2] };
   }
 
   // ---------- spouses (each spouse can carry their own name + notes) ----------
