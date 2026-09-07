@@ -218,7 +218,7 @@
   /* Activity log -- a permanent strip below the chart (not another layer on
      top of it), so it never competes with the tree itself for space. */
   #activityBar{
-    flex:none;height:130px;background:var(--panel);
+    flex:none;height:88px;background:var(--panel);
     border-top:1px solid var(--border);border-radius:0 0 16px 16px;display:flex;flex-direction:column;z-index:40;
   }
   #activityBar h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:0;padding:9px 16px 6px;flex:none;}
@@ -232,7 +232,7 @@
   .log-entry .when{color:var(--sub2);font-size:11px;white-space:nowrap;}
 
   @media (max-width: 720px){
-    #activityBar{height:96px;}
+    #activityBar{height:72px;}
     #activityBar .body{padding:0 12px 6px;}
   }
 
@@ -285,6 +285,39 @@
   #editor .footer button.delete:hover{background:var(--uncertain-soft);border-color:var(--uncertain);}
   #hint{font-size:11px;color:var(--sub2);margin-top:4px;line-height:1.4;}
 
+  /* Guestbook — a permanent left-hand panel (not a drawer), always visible
+     beside the tree, newest message first. */
+  #mainRow{flex:1 1 auto;min-height:0;display:flex;overflow:hidden;}
+  #contentCol{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;}
+
+  #guestbookPanel{
+    flex:none;width:270px;background:var(--panel);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  #guestbookPanel h2{flex:none;font-size:12px;font-weight:700;margin:0;padding:14px 16px 12px;
+    border-bottom:1px solid var(--border);color:var(--ink);text-transform:uppercase;letter-spacing:.05em;}
+  #guestbookList{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+  #guestbookList .empty{color:var(--sub2);font-size:12.5px;padding:6px 0;}
+  .gb-entry{border-bottom:1px dashed var(--border);padding-bottom:11px;}
+  .gb-entry:last-child{border-bottom:none;padding-bottom:0;}
+  .gb-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap;}
+  .gb-top .who{font-weight:700;color:var(--ink);font-size:12px;}
+  .gb-top .when{color:var(--sub2);font-size:10px;white-space:nowrap;}
+  .gb-msg{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.5;white-space:pre-wrap;}
+  .gb-remove{color:var(--sub2);font-size:10px;cursor:pointer;margin-top:4px;display:inline-block;}
+  .gb-remove:hover{color:var(--uncertain);}
+  .gb-more{text-align:center;padding-top:2px;}
+  #btnMoreGuestbook{color:var(--sub);font-size:11.5px;cursor:pointer;font-weight:600;
+    letter-spacing:.01em;border-bottom:1px dotted var(--sub2);padding-bottom:1px;}
+  #btnMoreGuestbook:hover{color:var(--accent);border-bottom-color:var(--accent);}
+  #guestbookComposer{flex:none;border-top:1px solid var(--border);padding:12px 16px;}
+  #gb_message{width:100%;min-height:56px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;
+    font-family:inherit;font-size:12.5px;background:var(--bg);color:var(--ink);resize:vertical;}
+  #gb_message:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  #btnPostGuestbook{margin-top:7px;width:100%;padding:8px;border-radius:8px;border:none;
+    background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:12.5px;cursor:pointer;transition:filter .15s;}
+  #btnPostGuestbook:hover{filter:brightness(1.08);}
+
   #spouseList{display:flex;flex-direction:column;gap:10px;}
   .spouseRow{border:1px solid var(--border);border-radius:10px;padding:10px 10px 11px;background:var(--bg);}
   .spouseRow .spouseRowTop{display:flex;gap:8px;align-items:center;}
@@ -326,6 +359,16 @@
     #siblingsCol .sibLabel{flex-basis:100%;justify-content:center;margin-bottom:0;}
     #spouseCards{max-width:100%;padding-top:6px;}
     .gkidsRow{max-width:160px;}
+
+    /* Guestbook: stack below the tree (tree first) as a capped-height,
+       collapsible-feeling strip rather than eating the screen. */
+    #mainRow{flex-direction:column;}
+    #contentCol{order:-1;flex:1 1 auto;}
+    #guestbookPanel{width:100%;flex:none;max-height:200px;border-right:none;border-top:1px solid var(--border);}
+    #guestbookPanel h2{padding:10px 14px 8px;font-size:11px;}
+    #guestbookList{padding:8px 14px;gap:9px;}
+    #guestbookComposer{padding:8px 14px 10px;}
+    #gb_message{min-height:40px;}
   }
   @media (max-width: 720px) and (hover: none){
     /* touch devices: slightly larger tap targets on cards */
@@ -354,8 +397,20 @@
   <button id="btnExportHTML" class="primary" title="Download this whole page with your edits baked in">⇩<span class="lbl"> Updated page (.html)</span></button>
 </div>
 
-<div id="breadcrumb"></div>
-<div id="stage"></div>
+<div id="mainRow">
+  <div id="guestbookPanel">
+    <h2>Family Guestbook</h2>
+    <div id="guestbookList"></div>
+    <div id="guestbookComposer">
+      <textarea id="gb_message" placeholder="Leave a note, memory, or question for the family…"></textarea>
+      <button id="btnPostGuestbook">Post</button>
+    </div>
+  </div>
+  <div id="contentCol">
+    <div id="breadcrumb"></div>
+    <div id="stage"></div>
+  </div>
+</div>
 <div id="bigPortraitBacking"></div>
 <div id="bigPortrait"></div>
 
@@ -2979,10 +3034,13 @@
   const STORAGE_KEY = "wong-family-tree-data-v1";
   const BASELINE_KEY = "wong-family-tree-baseline-v1";
   const CHANGELOG_KEY = "wong-family-tree-changelog-v1";
+  const GUESTBOOK_KEY = "wong-family-tree-guestbook-v1";
   const EDITOR_NAME_KEY = "wong-family-tree-editor-name";
   const MAX_LOG_ENTRIES = 300;
+  const MAX_GUESTBOOK_ENTRIES = 500;
   let DATA = [];
   let CHANGELOG = [];
+  let GUESTBOOK = [];
   let editingId = null; // null while adding a new person
 
   // A visitor's browser only ever sees a NEW publish of this file if the file's
@@ -3069,6 +3127,74 @@
         `</div>`;
     }).join("");
   }
+
+  // ---------- family guestbook (one shared board, open to anyone — same
+  // no-login trust model as the rest of this tool) ----------
+  function loadGuestbook(){
+    try {
+      const saved = JSON.parse(localStorage.getItem(GUESTBOOK_KEY));
+      return Array.isArray(saved) ? saved : [];
+    } catch(e){ return []; }
+  }
+
+  function postGuestbookEntry(message){
+    GUESTBOOK.push({
+      id: Date.now() + "-" + Math.random().toString(36).slice(2),
+      by: getEditorName(),
+      message,
+      at: new Date().toISOString()
+    });
+    if (GUESTBOOK.length > MAX_GUESTBOOK_ENTRIES) GUESTBOOK = GUESTBOOK.slice(-MAX_GUESTBOOK_ENTRIES);
+    localStorage.setItem(GUESTBOOK_KEY, JSON.stringify(GUESTBOOK));
+    if (window.__wftPushGuestbook) window.__wftPushGuestbook(GUESTBOOK);
+    renderGuestbook();
+  }
+
+  function removeGuestbookEntry(id){
+    GUESTBOOK = GUESTBOOK.filter(e => e.id !== id);
+    localStorage.setItem(GUESTBOOK_KEY, JSON.stringify(GUESTBOOK));
+    if (window.__wftPushGuestbook) window.__wftPushGuestbook(GUESTBOOK);
+    renderGuestbook();
+  }
+
+  const GUESTBOOK_PAGE_SIZE = 10;
+  let guestbookShown = GUESTBOOK_PAGE_SIZE;
+
+  function renderGuestbook(){
+    const list = document.getElementById("guestbookList");
+    if (!list) return;
+    if (!GUESTBOOK.length) {
+      list.innerHTML = '<div class="empty">No messages yet — be the first to leave a note for the family.</div>';
+      return;
+    }
+    const ordered = GUESTBOOK.slice().reverse();
+    const visible = ordered.slice(0, guestbookShown);
+    list.innerHTML = visible.map(entry => `
+      <div class="gb-entry">
+        <div class="gb-top"><span class="who">${escapeHtml(entry.by)}</span><span class="when">${escapeHtml(formatWhen(entry.at))}</span></div>
+        <div class="gb-msg">${escapeHtml(entry.message)}</div>
+        <span class="gb-remove" data-id="${entry.id}">remove</span>
+      </div>`).join("")
+      + (ordered.length > visible.length ? `<div class="gb-more"><span id="btnMoreGuestbook">View more (${ordered.length - visible.length} older)</span></div>` : "");
+    list.querySelectorAll(".gb-remove").forEach(el => {
+      el.addEventListener("click", () => {
+        if (confirm("Remove this message from the guestbook?")) removeGuestbookEntry(el.dataset.id);
+      });
+    });
+    const moreBtn = document.getElementById("btnMoreGuestbook");
+    if (moreBtn) moreBtn.addEventListener("click", () => {
+      guestbookShown += GUESTBOOK_PAGE_SIZE;
+      renderGuestbook();
+    });
+  }
+
+  document.getElementById("btnPostGuestbook").onclick = () => {
+    const ta = document.getElementById("gb_message");
+    const message = ta.value.trim();
+    if (!message) return;
+    postGuestbookEntry(message);
+    ta.value = "";
+  };
 
   function byId(id){ return DATA.find(p => p.id === id); }
 
@@ -3652,12 +3778,24 @@
     localStorage.setItem(CHANGELOG_KEY, JSON.stringify(CHANGELOG));
     renderActivityLog();
   };
+  // Same idea, one level down again: the guestbook syncs on its own path too.
+  window.__wftGetCurrentGuestbook = function(){ return GUESTBOOK; };
+  window.__wftOnRemoteGuestbook = function(remote){
+    if (!Array.isArray(remote)) return;
+    const remoteText = JSON.stringify(remote);
+    if (remoteText === JSON.stringify(GUESTBOOK)) return;
+    GUESTBOOK = remote;
+    localStorage.setItem(GUESTBOOK_KEY, JSON.stringify(GUESTBOOK));
+    renderGuestbook();
+  };
 
   // ---------- init ----------
   DATA = migrateSpouses(loadData());
   CHANGELOG = loadChangelog();
+  GUESTBOOK = loadGuestbook();
   render();
   renderActivityLog();
+  renderGuestbook();
 })();
 </script>
 
@@ -3687,6 +3825,7 @@
     const db = getDatabase(app);
     const dataRef = ref(db, "wongFamilyTree");
     const logRef = ref(db, "wongFamilyTreeLog");
+    const guestbookRef = ref(db, "wongFamilyTreeGuestbook");
     const storage = getStorage(app);
 
     // ---------- photo uploads (Firebase Storage) ----------
@@ -3715,6 +3854,9 @@
     window.__wftPushLog = function(log){
       set(logRef, log).catch(err => console.warn("[Wong Family Tree] Could not save the activity log:", err));
     };
+    window.__wftPushGuestbook = function(entries){
+      set(guestbookRef, entries).catch(err => console.warn("[Wong Family Tree] Could not save the guestbook:", err));
+    };
 
     onValue(dataRef, (snapshot) => {
       const val = snapshot.val();
@@ -3739,6 +3881,17 @@
       if (window.__wftOnRemoteLog) window.__wftOnRemoteLog(val);
     }, (err) => {
       console.warn("[Wong Family Tree] Activity log sync error (running in local-only mode):", err);
+    });
+
+    onValue(guestbookRef, (snapshot) => {
+      const val = snapshot.val();
+      if (val === null) {
+        if (window.__wftGetCurrentGuestbook) window.__wftPushGuestbook(window.__wftGetCurrentGuestbook());
+        return;
+      }
+      if (window.__wftOnRemoteGuestbook) window.__wftOnRemoteGuestbook(val);
+    }, (err) => {
+      console.warn("[Wong Family Tree] Guestbook sync error (running in local-only mode):", err);
     });
 
     console.log("[Wong Family Tree] Connected to the shared live database.");
