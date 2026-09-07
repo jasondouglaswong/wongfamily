@@ -172,6 +172,8 @@
   #spouseCards{display:flex;flex-direction:column;gap:8px;padding-top:20px;max-width:200px;}
   .spouse-card{background:var(--accent-soft);border:1px solid var(--accent);border-radius:9px;padding:8px 13px;
     font-size:12px;color:var(--ink);display:flex;align-items:center;gap:9px;font-weight:500;}
+  .spouse-card[data-spouse-photo] .avatar{cursor:pointer;transition:transform .12s;}
+  .spouse-card[data-spouse-photo] .avatar:hover{transform:scale(1.08);}
   .spouse-note{font-weight:400;color:var(--sub);font-size:11px;margin-top:2px;line-height:1.4;}
 
   .vline{width:1.4px;height:32px;background:var(--border);margin:2px auto;}
@@ -227,7 +229,7 @@
   .log-entry{padding:5px 0;font-size:12.5px;display:flex;gap:8px;align-items:baseline;border-bottom:1px dashed var(--border);}
   .log-entry:last-child{border-bottom:none;}
   .log-entry .who{font-weight:700;color:var(--ink);white-space:nowrap;}
-  .log-entry .what{color:var(--ink);flex:1;}
+  .log-entry .what{color:var(--ink);}
   .log-entry .what .person{font-weight:600;color:var(--accent2);}
   .log-entry .when{color:var(--sub2);font-size:11px;white-space:nowrap;}
 
@@ -323,6 +325,16 @@
   .spouseRow .spouseRowTop{display:flex;gap:8px;align-items:center;}
   .spouseRow .spouseRowTop input{flex:1;}
   .spouseRow textarea{min-height:52px;margin-top:8px;}
+  .spAvatarWrap{flex:none;position:relative;width:30px;height:30px;}
+  .spAvatarWrap .avatar{cursor:default;}
+  .spPhotoBtns{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);display:flex;gap:3px;
+    opacity:0;transition:opacity .15s;}
+  .spouseRow:hover .spPhotoBtns, .spAvatarWrap:focus-within .spPhotoBtns{opacity:1;}
+  .sp_photo_upload, .sp_photo_remove{flex:none;width:18px;height:18px;padding:0;border-radius:50%;border:1px solid var(--border);
+    background:var(--panel);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:9px;line-height:1;box-shadow:var(--shadow);transition:color .15s,border-color .15s;}
+  .sp_photo_upload:hover{color:var(--accent);border-color:var(--accent);}
+  .sp_photo_remove:hover{color:var(--uncertain);border-color:var(--uncertain);}
   .sp_remove{flex:none;width:30px;height:30px;padding:0;border-radius:8px;border:1px solid var(--border);
     background:var(--panel);color:var(--sub);cursor:pointer;font-size:14px;line-height:1;transition:background .15s,border-color .15s,color .15s;}
   .sp_remove:hover{background:var(--uncertain-soft);border-color:var(--uncertain);color:var(--uncertain);}
@@ -3203,6 +3215,13 @@
     return "p" + n;
   }
 
+  // Spouses live inside their partner's own record, not as top-level DATA
+  // entries, so they get their own lightweight id scheme -- just needs to be
+  // stable and unique enough to key a photo-upload storage path and a DOM row.
+  function newSpouseId(){
+    return "sp" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
   // ---------- photo avatars ----------
   // Colored-initials avatar by default; a real uploaded photo (person.photoUrl) takes
   // over the same slot automatically. Exactly one gold, one red — no shade variation —
@@ -3331,7 +3350,7 @@
     const siblings = parent ? kids(parent.id).filter(s => s.id !== p.id) : [];
     const children = kids(p.id);
     const spouses = (Array.isArray(p.spouses) ? p.spouses : [])
-      .map(s => ({name:(s.name||"").trim(), note:(s.note||"").trim()})).filter(s=>s.name);
+      .map(s => ({id:s.id, name:(s.name||"").trim(), note:(s.note||"").trim(), photoUrl:s.photoUrl})).filter(s=>s.name);
 
     let html = "";
     html += ancestorTier(greatGrand, "tier-anc-1", "Great-grandparent");
@@ -3356,7 +3375,7 @@
     html += `</div>`;
 
     if (spouses.length){
-      html += `<div id="spouseCards">` + spouses.map(s => `<div class="spouse-card">${avatarHtml({id:"spouse-"+s.name, name:s.name},"avatar-sm")}<div><span>${escapeHtml(s.name)}</span>${s.note?`<div class="spouse-note">${escapeHtml(s.note)}</div>`:""}</div></div>`).join("") + `</div>`;
+      html += `<div id="spouseCards">` + spouses.map(s => `<div class="spouse-card"${s.photoUrl?' data-spouse-photo="1"':''} data-spouse-name="${escapeHtml(s.name)}" data-spouse-photo-url="${s.photoUrl?escapeHtml(s.photoUrl):''}">${avatarHtml({name:s.name, photoUrl:s.photoUrl},"avatar-sm")}<div><span>${escapeHtml(s.name)}</span>${s.note?`<div class="spouse-note">${escapeHtml(s.note)}</div>`:""}</div></div>`).join("") + `</div>`;
     } else { html += `<div style="width:1px"></div>`; }
     html += `</div>`; // #focusRow
 
@@ -3400,6 +3419,14 @@
     if (addPhotoBtn) addPhotoBtn.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
     const editBadge = stage.querySelector(".editBadge");
     if (editBadge) editBadge.addEventListener("click", (e) => { e.stopPropagation(); openEditor(p.id); });
+    // a spouse with a real uploaded photo gets the same tap-to-enlarge cameo
+    // as the main person -- no point uploading a photo nobody can see bigger
+    stage.querySelectorAll('.spouse-card[data-spouse-photo]').forEach(card => {
+      card.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleBigPortrait({ name: card.dataset.spouseName, photoUrl: card.dataset.spousePhotoUrl });
+      });
+    });
 
     renderBreadcrumb(id);
   }
@@ -3465,59 +3492,159 @@
           : [];
       }
       delete p.spouse;
+      // Backfill a stable id on any spouse that predates photo-upload support
+      // (or just got migrated above) -- same one-time, idempotent shape as
+      // the legacy-string migration itself.
+      p.spouses.forEach(s => { if (!s.id) s.id = newSpouseId(); });
     });
     return arr;
   }
 
-  function spouseRowHtml(name, note){
-    return `<div class="spouseRow">
+  // A spouse can only get a photo-upload slot once they have a stable id --
+  // i.e. once they've been saved at least once, same "save first" rule the
+  // main person's own photo already follows (see #photoSectionNew above).
+  function spouseAvatarBlockHtml(s){
+    s = s || {};
+    const av = avatarHtml({name:s.name || "", photoUrl:s.photoUrl}, "avatar-sm");
+    if (!s.id){
+      return `<div class="spAvatarWrap" title="Save this spouse first, then come back to add a photo">${av}</div>`;
+    }
+    return `<div class="spAvatarWrap">
+      ${av}
+      <div class="spPhotoBtns">
+        <button type="button" class="sp_photo_upload" title="${s.photoUrl ? "Change photo" : "Add photo"}">${ICON.camera}</button>
+        ${s.photoUrl ? `<button type="button" class="sp_photo_remove" title="Remove photo">✕</button>` : ""}
+      </div>
+      <input type="file" class="sp_photo_input" accept="image/*" style="display:none;">
+    </div>`;
+  }
+
+  function spouseRowHtml(s){
+    s = s || {};
+    return `<div class="spouseRow" data-id="${s.id || ""}">
       <div class="spouseRowTop">
-        <input type="text" class="sp_name" placeholder="Spouse name" value="${escapeHtml(name || "")}">
+        ${spouseAvatarBlockHtml(s)}
+        <input type="text" class="sp_name" placeholder="Spouse name" value="${escapeHtml(s.name || "")}">
         <button type="button" class="sp_remove" title="Remove this spouse">✕</button>
       </div>
-      <textarea class="sp_note" placeholder="Notes about this spouse (optional)">${escapeHtml(note || "")}</textarea>
+      <textarea class="sp_note" placeholder="Notes about this spouse (optional)">${escapeHtml(s.note || "")}</textarea>
     </div>`;
+  }
+
+  function wireSpouseRemove(row){
+    row.querySelector(".sp_remove").addEventListener("click", () => {
+      const wrap = document.getElementById("spouseList");
+      const allRows = wrap.querySelectorAll(".spouseRow");
+      if (allRows.length <= 1) {
+        // keep at least one (empty) row visible rather than leaving a gap
+        row.querySelector(".sp_name").value = "";
+        row.querySelector(".sp_note").value = "";
+        return;
+      }
+      row.remove();
+    });
+  }
+
+  // Mirrors the main person's own upload/remove flow (see "photo upload"
+  // below): mutates the live DATA record directly and persists right away,
+  // independent of the editor's own Save button, so it's never lost.
+  function wireSpousePhotoControls(row){
+    const uploadBtn = row.querySelector(".sp_photo_upload");
+    const fileInput = row.querySelector(".sp_photo_input");
+    const removeBtn = row.querySelector(".sp_photo_remove");
+    const refreshRowAvatar = (spouse) => {
+      const slot = row.querySelector(".spAvatarWrap");
+      if (slot) slot.outerHTML = spouseAvatarBlockHtml(spouse);
+      wireSpousePhotoControls(row);
+    };
+    if (uploadBtn && fileInput){
+      uploadBtn.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        e.target.value = "";
+        const spouseId = row.dataset.id;
+        if (!file || !editingId || !spouseId) return;
+        if (!file.type.startsWith("image/")) { alert("Please choose an image file."); return; }
+        if (file.size > 8 * 1024 * 1024) { alert("That image is over 8MB — please choose a smaller one."); return; }
+        if (!window.__wftUploadPhoto) { alert("Photo upload isn't available right now — try again in a moment."); return; }
+        const p = byId(editingId);
+        const spouse = p && Array.isArray(p.spouses) ? p.spouses.find(sp => sp.id === spouseId) : null;
+        if (!spouse) return;
+        try {
+          const { url, path } = await window.__wftUploadPhoto(file, spouseId);
+          const oldPath = spouse.photoPath;
+          spouse.photoUrl = url;
+          spouse.photoPath = path;
+          p.lastEditedBy = getEditorName();
+          p.lastEditedAt = new Date().toISOString();
+          persist();
+          logChange("added a photo for", `${spouse.name} (spouse of ${p.name})`);
+          render(currentId);
+          refreshRowAvatar(spouse);
+          if (oldPath && window.__wftDeletePhoto) window.__wftDeletePhoto(oldPath);
+        } catch (err) {
+          console.warn("[Wong Family Tree] Spouse photo upload failed:", err);
+          alert("Upload failed — check your connection and try again.");
+        }
+      });
+    }
+    if (removeBtn){
+      removeBtn.addEventListener("click", () => {
+        const spouseId = row.dataset.id;
+        const p = editingId ? byId(editingId) : null;
+        const spouse = p && Array.isArray(p.spouses) ? p.spouses.find(sp => sp.id === spouseId) : null;
+        if (!spouse || !spouse.photoUrl) return;
+        if (!confirm(`Remove ${spouse.name}'s photo?`)) return;
+        const oldPath = spouse.photoPath;
+        delete spouse.photoUrl;
+        delete spouse.photoPath;
+        p.lastEditedBy = getEditorName();
+        p.lastEditedAt = new Date().toISOString();
+        persist();
+        logChange("removed the photo for", `${spouse.name} (spouse of ${p.name})`);
+        render(currentId);
+        refreshRowAvatar(spouse);
+        if (oldPath && window.__wftDeletePhoto) window.__wftDeletePhoto(oldPath);
+      });
+    }
   }
 
   function renderSpouseRows(list){
     const wrap = document.getElementById("spouseList");
     const rows = (list && list.length) ? list : [{name:"",note:""}];
-    wrap.innerHTML = rows.map(s => spouseRowHtml(s.name, s.note)).join("");
-    wrap.querySelectorAll(".sp_remove").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const allRows = wrap.querySelectorAll(".spouseRow");
-        if (allRows.length <= 1) {
-          // keep at least one (empty) row visible rather than leaving a gap
-          btn.closest(".spouseRow").querySelector(".sp_name").value = "";
-          btn.closest(".spouseRow").querySelector(".sp_note").value = "";
-          return;
-        }
-        btn.closest(".spouseRow").remove();
-      });
+    wrap.innerHTML = rows.map(s => spouseRowHtml(s)).join("");
+    wrap.querySelectorAll(".spouseRow").forEach(row => {
+      wireSpouseRemove(row);
+      wireSpousePhotoControls(row);
     });
   }
 
-  function collectSpouseRows(){
-    return Array.from(document.querySelectorAll("#spouseList .spouseRow")).map(row => ({
-      name: row.querySelector(".sp_name").value.trim(),
-      note: row.querySelector(".sp_note").value.trim()
-    })).filter(s => s.name || s.note);
+  // Reads current name/note straight off the form, but photo fields never
+  // had a form control of their own -- those come from whatever's live on
+  // the matching spouse in DATA right now (kept in sync by the upload/remove
+  // handlers above), same "read fresh off DATA" rule the main person's photo
+  // already follows in the Save handler below.
+  function collectSpouseRows(existingSpouses){
+    const existingById = new Map((existingSpouses || []).map(s => [s.id, s]));
+    return Array.from(document.querySelectorAll("#spouseList .spouseRow")).map(row => {
+      const name = row.querySelector(".sp_name").value.trim();
+      const note = row.querySelector(".sp_note").value.trim();
+      if (!name && !note) return null;
+      const id = row.dataset.id || newSpouseId();
+      const out = { id, name, note };
+      const prior = existingById.get(id);
+      if (prior && prior.photoUrl) { out.photoUrl = prior.photoUrl; out.photoPath = prior.photoPath; }
+      return out;
+    }).filter(Boolean);
   }
 
   document.getElementById("btnAddSpouse").addEventListener("click", () => {
     const wrap = document.getElementById("spouseList");
-    wrap.insertAdjacentHTML("beforeend", spouseRowHtml("", ""));
+    wrap.insertAdjacentHTML("beforeend", spouseRowHtml({name:"",note:""}));
     const rows = wrap.querySelectorAll(".spouseRow");
     const last = rows[rows.length - 1];
-    last.querySelector(".sp_remove").addEventListener("click", () => {
-      const allRows = wrap.querySelectorAll(".spouseRow");
-      if (allRows.length <= 1) {
-        last.querySelector(".sp_name").value = "";
-        last.querySelector(".sp_note").value = "";
-        return;
-      }
-      last.remove();
-    });
+    wireSpouseRemove(last);
+    wireSpousePhotoControls(last);
     last.querySelector(".sp_name").focus();
   });
 
@@ -3655,7 +3782,7 @@
       gen,
       dates: document.getElementById("f_dates").value.trim(),
       parent: document.getElementById("f_parent").value || null,
-      spouses: collectSpouseRows(),
+      spouses: collectSpouseRows(existing ? existing.spouses : []),
       note: document.getElementById("f_note").value.trim(),
       confidence: document.getElementById("f_confidence").value,
       uncertain: document.getElementById("f_uncertain").checked,
